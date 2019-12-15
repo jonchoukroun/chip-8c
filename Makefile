@@ -1,9 +1,10 @@
-CC=clang
-CFLAGS=-I
-DEPS=cpu.h fontset.h display.h
+CC = clang
+CFLAGS = -Wall
+DEPS =  cpu.h fontset.h display.h keyboard.h
+OBJ = dist/main.o dist/cpu.o dist/display.o dist/keyboard.o
 
 dist/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-chip8: dist/chip8.o dist/cpu.o dist/display.o
-	$(CC) -o dist/chip8 dist/chip8.o dist/cpu.o dist/display.o
+chip8: $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^

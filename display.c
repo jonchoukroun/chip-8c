@@ -17,6 +17,7 @@ void putFrameBuffer(uint8 *frame_buffer) {
   //   }
   // }
   // printf("|");
+
   for (uint8 i = 0; i < 66; i++) {
     printf("_");
   }

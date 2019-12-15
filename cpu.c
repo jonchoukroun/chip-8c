@@ -1,6 +1,7 @@
 #include "cpu.h"
 #include "fontset.h"
 #include "display.h"
+#include "keyboard.h"
 
 struct CPU initialize() {
   struct CPU cpu;
@@ -17,11 +18,11 @@ struct CPU initialize() {
 
   // testing
   // cpu.stack[cpu.stack_pointer] = 0xab;
-  cpu.V[0x0] = 0x3e;
-  cpu.V[0x1] = 0x1e;
+  cpu.V[0x0] = 0x4;
+  cpu.V[0x1] = 0x2;
   cpu.RAM[cpu.program_counter] = 0xd0;
   cpu.RAM[cpu.program_counter + 1] = 0x15;
-  cpu.I = 0;
+  cpu.I = 4;
 
   return cpu;
 }
@@ -34,60 +35,85 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
   printf("pc: %x\n", cpu.program_counter);
   printf("Reading opcode: %x\n", opcode);
   if (opcode == 0x00e0) {
-    // handle in gfx module
     clearDisplay(cpu.frame_buffer);
-    cpu.program_counter++;
+
+    cpu.program_counter += 2;
+
   } else if (opcode == 0x00ee) {
     cpu.program_counter = cpu.stack[cpu.stack_pointer];
     cpu.stack_pointer--;
+
   } else if (0x0000 <= opcode && opcode < 0x1000) {
     printf("Ignored jump to routine at: %X\n", opcode & 0x0fff);
     cpu.program_counter += 2;
+
   } else if (0x1000 <= opcode && opcode < 0x2000) {
     cpu.program_counter = opcode & 0x0fff;
+
   } else if (0x2000 <= opcode && opcode < 0x3000) {
     cpu.stack_pointer++;
     cpu.stack[cpu.stack_pointer] = cpu.program_counter;
     cpu.program_counter = opcode & 0x0fff;
+
   } else if (0x3000 <= opcode && opcode < 0x4000) {
     if ((cpu.V[(opcode & 0x0f00) >> 8]) == (opcode & 0x00ff)) {
       cpu.program_counter += 2;
     }
+
+    cpu.program_counter += 2;
+
   } else if (0x4000 <= opcode && opcode < 0x5000) {
     if ((cpu.V[(opcode & 0x0f00) >> 8]) != (opcode & 0x00ff)) {
       cpu.program_counter += 2;
     }
+
+    cpu.program_counter += 2;
+
   } else if (0x5000 <= opcode && opcode < 0x6000) {
     if (cpu.V[(opcode & 0x0f00) >> 8] == cpu.V[(opcode & 0x00f0) >> 4]) {
       cpu.program_counter += 2;
     }
-  } else if (0x6000 <= opcode && opcode < 0x7000) {
-    uint8 x = opcode & 0x0f00 >> 8;
-    uint8 kk = opcode & 0x00ff;
-    cpu.V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
+
     cpu.program_counter += 2;
+
+  } else if (0x6000 <= opcode && opcode < 0x7000) {
+    cpu.V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
+
+    cpu.program_counter += 2;
+
   } else if (0x7000 <= opcode && opcode < 0x8000) {
     cpu.V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
+
     cpu.program_counter += 2;
+
   } else if (0x8000 <= opcode && opcode < 0x9000) {
-    executeMathInstruction(opcode, cpu);
+    cpu = executeMathInstruction(opcode, cpu);
+
     cpu.program_counter += 2;
+
   } else if (0x9000 <= opcode && opcode <= 0xa000) {
     if ((opcode & 0x000f) != 0) { return cpu; }
 
     if (cpu.V[(opcode & 0x0f00) >> 8] != cpu.V[(opcode & 0x00f0) >> 4]) {
       cpu.program_counter += 2;
     }
+
+    cpu.program_counter += 2;
+
   } else if (0xa000 <= opcode && opcode < 0xb000) {
     cpu.I = opcode & 0x0fff;
+
     cpu.program_counter += 2;
+
   } else if (0xb000 <= opcode && opcode < 0xc000) {
     cpu.program_counter = cpu.V[0x0] + (opcode & 0x0fff);
-    printf("pc: %x\n", cpu.program_counter);
+
   } else if (0xc000 <= opcode && opcode < 0xd000) {
     uint8 num = generateRandomNumber();
     cpu.V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
+
     cpu.program_counter += 2;
+
   } else if (0xd000 <= opcode && opcode < 0xe000) {
     uint8 height = opcode & 0x000f;
     uint8 width = 0x8;
@@ -109,7 +135,15 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
       }
     }
 
+    // TODO: implement draw flag
     putFrameBuffer(cpu.frame_buffer);
+
+    cpu.program_counter += 2;
+
+  } else if (0xe000 <= opcode && opcode < 0xf000) {
+    cpu = readKeyOpcode(opcode, cpu);
+
+    cpu.program_counter += 2;
   } else {
     printf("Cannont match opcode: %x\n", opcode);
   }
@@ -117,7 +151,7 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
   return cpu;
 }
 
-void executeMathInstruction(uint16 opcode, struct CPU cpu) {
+struct CPU executeMathInstruction(uint16 opcode, struct CPU cpu) {
   uint8 x = (opcode & 0x0f00) >> 8;
   uint8 y = (opcode & 0x00f0) >> 4;
   printf("Vx, Vy: %x %x\n", cpu.V[x], cpu.V[y]);
@@ -176,6 +210,8 @@ void executeMathInstruction(uint16 opcode, struct CPU cpu) {
   default:
     printf("Could not match opcode %x\n", opcode);
   }
+
+  return cpu;
 }
 
 uint8 generateRandomNumber() {
