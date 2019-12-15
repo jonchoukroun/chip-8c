@@ -1,4 +1,4 @@
-#include "chip8_cpu.h"
+#include "cpu.h"
 
 uint8 fontSet[80] = {
   0xF0, 0x90, 0x90, 0x90, 0xF0,

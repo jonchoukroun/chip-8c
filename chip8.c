@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "chip8_cpu.h"
+#include "cpu.h"
 
 int main(int argc, char const *argv[]) {
 
