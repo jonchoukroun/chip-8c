@@ -1,9 +1,9 @@
 CC=clang
 CFLAGS=-I
-DEPS=chip8_cpu.h fontset.h
+DEPS=cpu.h fontset.h
 
-%.o: %.c $(DEPS)
+dist/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-chip8: chip8.o chip8_cpu.o
-	$(CC) -o chip8 chip8.o chip8_cpu.o
+chip8: dist/chip8.o dist/cpu.o
+	$(CC) -o dist/chip8 dist/chip8.o dist/cpu.o
