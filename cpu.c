@@ -8,8 +8,16 @@ struct CPU initialize() {
   cpu.program_counter = 0x200;
   cpu.stack_pointer = 0x0;
 
+  for (uint16 i = 0; i < RAM_SIZE; i++) {
+    cpu.RAM[i] = 0;
+  }
+
   for (uint8 i = 0; i < 80; i++) {
     cpu.RAM[i] = fontSet[i];
+  }
+
+  for (uint8 i = 0; i <= 0xf; i++) {
+    cpu.V[i] = 0;
   }
 
   for (uint16 i = 0; i < 2048; i++) {
@@ -17,12 +25,14 @@ struct CPU initialize() {
   }
 
   // testing
-  // cpu.stack[cpu.stack_pointer] = 0xab;
-  cpu.V[0x0] = 0x4;
-  cpu.V[0x1] = 0x2;
-  cpu.RAM[cpu.program_counter] = 0xd0;
-  cpu.RAM[cpu.program_counter + 1] = 0x15;
-  cpu.I = 4;
+  cpu.V[0x0] = 0xa;
+  cpu.V[0x1] = 0xb;
+  cpu.V[0x2] = 0xc;
+
+  cpu.RAM[cpu.program_counter] = 0xf2;
+  cpu.RAM[cpu.program_counter + 1] = 0x55;
+
+  cpu.I = 200;
 
   return cpu;
 }
@@ -119,6 +129,7 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
     uint8 width = 0x8;
     uint16 pixel;
     cpu.V[0xf] = 0;
+    printf("I %x\n", cpu.I);
 
     for (uint8 row = 0; row < height; row++) {
       pixel = cpu.RAM[cpu.I + row];
@@ -144,6 +155,16 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
     cpu = readKeyOpcode(opcode, cpu);
 
     cpu.program_counter += 2;
+
+  } else if (0xf000 <= opcode && opcode <= 0xffff) {
+    if ((opcode & 0x00ff) == 0x0a) {
+      cpu = readKeyOpcode(opcode, cpu);
+    } else {
+      cpu = executeTimerInstruction(opcode, cpu);
+    }
+
+    cpu.program_counter += 2;
+
   } else {
     printf("Cannont match opcode: %x\n", opcode);
   }
@@ -209,6 +230,58 @@ struct CPU executeMathInstruction(uint16 opcode, struct CPU cpu) {
 
   default:
     printf("Could not match opcode %x\n", opcode);
+  }
+
+  return cpu;
+}
+
+struct CPU executeTimerInstruction(uint16 opcode, struct CPU cpu) {
+  uint8 x = (opcode & 0x0f00) >> 8;
+  uint8 decimal;
+
+  switch (opcode & 0x0ff) {
+  case 0x07:
+    cpu.V[x] = cpu.delay_timer;
+    break;
+
+  case 0x15:
+    cpu.delay_timer = cpu.V[x];
+    break;
+
+  case 0x18:
+    cpu.sound_timer = cpu.V[x];
+    break;
+
+  case 0x1e:
+    cpu.I += cpu.V[x];
+    break;
+
+  case 0x29:
+    cpu.I = cpu.V[x] * 5;
+    break;
+
+  case 0x33:
+    decimal = cpu.V[x];
+    uint8 sig = 100;
+
+    while (decimal > 0) {
+      cpu.RAM[cpu.I] = decimal / sig;
+      decimal %= sig;
+      sig /= 10;
+      cpu.I += 1;
+    }
+    break;
+
+  case 0x55:
+    for (uint8 i = 0x0; i <= x; i++) {
+      cpu.RAM[cpu.I] = cpu.V[i];
+      cpu.I++;
+    }
+    break;
+
+  default:
+    printf("Could not match opcode %x\n", opcode);
+    break;
   }
 
   return cpu;

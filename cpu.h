@@ -42,6 +42,8 @@ struct CPU readOpcode(uint16, struct CPU);
 
 struct CPU executeMathInstruction(uint16, struct CPU);
 
+struct CPU executeTimerInstruction(uint16, struct CPU);
+
 uint8 generateRandomNumber();
 
 #endif

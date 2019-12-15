@@ -9,8 +9,9 @@ void displayKeyPress(uint8 * keyboard) {
 }
 
 struct CPU readKeyOpcode(uint16 opcode, struct CPU cpu) {
-  switch (opcode & 0x00ff)
-  {
+  uint8 key;
+
+  switch (opcode & 0x00ff) {
   case 0x9e:
     if (cpu.keyboard[cpu.V[(opcode & 0x0f00) >> 8]] != 0) {
       cpu.program_counter += 2;
@@ -21,8 +22,16 @@ struct CPU readKeyOpcode(uint16 opcode, struct CPU cpu) {
     if (cpu.keyboard[cpu.V[(opcode & 0x0f00) >> 8]] == 0) {
       cpu.program_counter += 2;
     }
+    break;
+
+  case 0x0a:
+    // Wait for keypress...
+    key = 0;
+    cpu.V[(opcode & 0x0f00) >> 8] = key;
+    break;
 
   default:
+    printf("Could not match opcode %x\n", opcode);
     break;
   }
   return cpu;
