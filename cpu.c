@@ -25,14 +25,16 @@ struct CPU initialize() {
   }
 
   // testing
-  cpu.V[0x0] = 0xa;
-  cpu.V[0x1] = 0xb;
-  cpu.V[0x2] = 0xc;
+  cpu.I = 200;
+
+  for (uint8 i = 0; i < 5; i++) {
+    cpu.RAM[cpu.I] = i * 10;
+    cpu.I++;
+  }
+  cpu.I = 200;
 
   cpu.RAM[cpu.program_counter] = 0xf2;
-  cpu.RAM[cpu.program_counter + 1] = 0x55;
-
-  cpu.I = 200;
+  cpu.RAM[cpu.program_counter + 1] = 0x65;
 
   return cpu;
 }
@@ -275,6 +277,13 @@ struct CPU executeTimerInstruction(uint16 opcode, struct CPU cpu) {
   case 0x55:
     for (uint8 i = 0x0; i <= x; i++) {
       cpu.RAM[cpu.I] = cpu.V[i];
+      cpu.I++;
+    }
+    break;
+
+  case 0x65:
+    for (uint8 i = 0x0; i <= x; i++) {
+      cpu.V[i] = cpu.RAM[cpu.I];
       cpu.I++;
     }
     break;
