@@ -1,28 +1,27 @@
 #include "cpu.h"
 #include "fontset.h"
+#include "display.h"
 
 struct CPU initialize() {
   struct CPU cpu;
   cpu.program_counter = 0x200;
   cpu.stack_pointer = 0x0;
 
-  // TODO: extract to graphics file
-  for (int i = 0; i < 80; ++i) {
+  for (uint8 i = 0; i < 80; i++) {
     cpu.RAM[i] = fontSet[i];
   }
 
-  // TODO: extract to graphics file
   for (uint16 i = 0; i < 2048; i++) {
     cpu.frame_buffer[i] = 0;
   }
 
   // testing
   // cpu.stack[cpu.stack_pointer] = 0xab;
-  cpu.V[0x0] = 0x00;
-  cpu.V[0x1] = 0x00;
+  cpu.V[0x0] = 0x3e;
+  cpu.V[0x1] = 0x1e;
   cpu.RAM[cpu.program_counter] = 0xd0;
-  cpu.RAM[cpu.program_counter + 1] = 0x05;
-  cpu.I = 0x0;
+  cpu.RAM[cpu.program_counter + 1] = 0x15;
+  cpu.I = 0;
 
   return cpu;
 }
@@ -36,7 +35,7 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
   printf("Reading opcode: %x\n", opcode);
   if (opcode == 0x00e0) {
     // handle in gfx module
-    printf("clear screen\n");
+    clearDisplay(cpu.frame_buffer);
     cpu.program_counter++;
   } else if (opcode == 0x00ee) {
     cpu.program_counter = cpu.stack[cpu.stack_pointer];
@@ -90,26 +89,27 @@ struct CPU readOpcode(uint16 opcode, struct CPU cpu) {
     cpu.V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
     cpu.program_counter += 2;
   } else if (0xd000 <= opcode && opcode < 0xe000) {
-    uint8 x = cpu.V[(opcode & 0x0f00) >> 8];
-    uint8 y = cpu.V[(opcode & 0x00f0) >> 4];
     uint8 height = opcode & 0x000f;
+    uint8 width = 0x8;
     uint16 pixel;
-    printf("I %x\n", cpu.RAM[cpu.I]);
-
     cpu.V[0xf] = 0;
-    for (uint8 y_line = 0; y_line < height; y_line++) {
-      pixel = cpu.RAM[cpu.I + y_line];
-      for (uint8 x_line = 0; x_line < 8; x_line++) {
-        if ((pixel & (0x80 >> x_line)) != 0) {
-          if (cpu.frame_buffer[x + x_line + ((y + y_line) * 64)] == 1) {
-            cpu.V[0xf] = 1;
-          }
 
-          cpu.frame_buffer[x + x_line + ((y + y_line) * 64)] ^= 1;
+    for (uint8 row = 0; row < height; row++) {
+      pixel = cpu.RAM[cpu.I + row];
+      uint8 y = (cpu.V[(opcode & 0x00f0) >> 4] + row) % DISPLAY_HEIGHT;
+      for (uint8 col = 0; col < width; col++) {
+        uint8 x = (cpu.V[(opcode & 0x0f00) >> 8] + col) % DISPLAY_WIDTH;
+
+        if (pixel & (0x80 >> col)) {
+          uint16 frame = x + (y * 64);
+          if (cpu.frame_buffer[frame]) { cpu.V[0xf] = 1; }
+
+          cpu.frame_buffer[frame] ^= 1;
         }
       }
     }
-    printBuffer(cpu.frame_buffer);
+
+    putFrameBuffer(cpu.frame_buffer);
   } else {
     printf("Cannont match opcode: %x\n", opcode);
   }
@@ -194,22 +194,4 @@ uint8 generateRandomNumber() {
   }
 
   return -1;
-}
-
-// TODO: extract to graphics file
-void printBuffer(uint8 *frame_buffer) {
-  printf("\n\n\t\t");
-
-  for (uint8 y = 0; y < 32; y++) {
-    for (uint8 x = 0; x < 64; x++) {
-      if (frame_buffer[x + (y * 64)] == 1) {
-        printf("*");
-      } else {
-        printf(" ");
-      }
-    }
-    printf("\n\t\t");
-  }
-
-  printf("\n");
 }

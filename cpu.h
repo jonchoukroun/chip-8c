@@ -8,7 +8,8 @@
 #define RAM_SIZE 4096
 #define REGISTER_COUNT 16
 #define KEYBOARD_SIZE 16
-#define DISPLAY_SIZE 2048
+#define DISPLAY_HEIGHT 32
+#define DISPLAY_WIDTH 64
 #define STACK_SIZE 8
 
 typedef uint8_t uint8;
@@ -24,7 +25,7 @@ struct CPU {
   uint8 delay_timer;
   uint8 sound_timer;
 
-  uint8 frame_buffer[DISPLAY_SIZE];
+  uint8 frame_buffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 
   uint16 program_counter;
 
@@ -42,7 +43,5 @@ struct CPU readOpcode(uint16, struct CPU);
 void executeMathInstruction(uint16, struct CPU);
 
 uint8 generateRandomNumber();
-
-void printBuffer(uint8 *);
 
 #endif
