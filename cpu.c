@@ -1,4 +1,4 @@
-#include "chip8_cpu.h"
+#include "cpu.h"
 #include "fontset.h"
 
 struct CPU initialize() {

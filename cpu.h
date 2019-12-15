@@ -2,7 +2,7 @@
 #define CHIP_8
 
 #include <stdint.h>
-// remove when exorting functions to other c file
+// remove when exporting functions to other c file
 #include <stdio.h>
 
 #define RAM_SIZE 4096
