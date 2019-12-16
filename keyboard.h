@@ -5,6 +5,6 @@
 
 void displayKeyPress(uint8 *);
 
-struct CPU readKeyOpcode(uint16, struct CPU);
+void readKeyOpcode(uint16, struct CPU *);
 
 #endif

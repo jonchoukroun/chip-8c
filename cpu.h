@@ -36,13 +36,13 @@ struct CPU {
 
 struct CPU initialize();
 
-uint16 fetchOpcode(struct CPU);
+uint16 fetchOpcode(struct CPU *);
 
-struct CPU readOpcode(uint16, struct CPU);
+void readOpcode(uint16, struct CPU *);
 
-struct CPU executeMathInstruction(uint16, struct CPU);
+void executeMathInstruction(uint16, struct CPU *);
 
-struct CPU executeTimerInstruction(uint16, struct CPU);
+void executeTimerInstruction(uint16, struct CPU *);
 
 uint8 generateRandomNumber();
 
