@@ -20,14 +20,14 @@ struct CPU {
   uint16 I;
 
   uint8 stack[STACK_SIZE];
-  uint8 stack_pointer;
+  uint8 stackPointer;
 
-  uint8 delay_timer;
-  uint8 sound_timer;
+  uint8 delayTimer;
+  uint8 SoundTimer;
 
-  uint8 frame_buffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
+  uint8 frameBuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 
-  uint16 program_counter;
+  uint16 programCounter;
 
   uint8 RAM[RAM_SIZE];
 

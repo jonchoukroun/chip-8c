@@ -5,8 +5,8 @@
 
 struct CPU initialize() {
   struct CPU cpu;
-  cpu.program_counter = 0x200;
-  cpu.stack_pointer = 0x0;
+  cpu.programCounter = 0x200;
+  cpu.stackPointer = 0x0;
 
   for (uint16 i = 0; i < RAM_SIZE; i++) {
     cpu.RAM[i] = 0;
@@ -21,7 +21,7 @@ struct CPU initialize() {
   }
 
   for (uint16 i = 0; i < 2048; i++) {
-    cpu.frame_buffer[i] = 0;
+    cpu.frameBuffer[i] = 0;
   }
 
   // testing
@@ -29,98 +29,98 @@ struct CPU initialize() {
   cpu.V[0x1] = 0x5;
   cpu.I = 0xb * 5;
 
-  cpu.RAM[cpu.program_counter] = 0xd0;
-  cpu.RAM[cpu.program_counter + 1] = 0x05;
+  cpu.RAM[cpu.programCounter] = 0xd0;
+  cpu.RAM[cpu.programCounter + 1] = 0x05;
 
   return cpu;
 }
 
 uint16 fetchOpcode(struct CPU *cpu) {
-  return cpu->RAM[cpu->program_counter] << 8 | cpu->RAM[cpu->program_counter + 1];
+  return cpu->RAM[cpu->programCounter] << 8 | cpu->RAM[cpu->programCounter + 1];
 }
 
 void readOpcode(uint16 opcode, struct CPU *cpu) {
-  printf("pc: %x\n", cpu->program_counter);
+  printf("pc: %x\n", cpu->programCounter);
   printf("Reading opcode: %x\n", opcode);
   if (opcode == 0x00e0) {
-    clearDisplay(cpu->frame_buffer);
+    clearDisplay(cpu->frameBuffer);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (opcode == 0x00ee) {
-    cpu->program_counter = cpu->stack[cpu->stack_pointer];
-    cpu->stack_pointer--;
+    cpu->programCounter = cpu->stack[cpu->stackPointer];
+    cpu->stackPointer--;
 
   } else if (0x0000 <= opcode && opcode < 0x1000) {
     printf("Ignored jump to routine at: %X\n", opcode & 0x0fff);
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x1000 <= opcode && opcode < 0x2000) {
-    cpu->program_counter = opcode & 0x0fff;
+    cpu->programCounter = opcode & 0x0fff;
 
   } else if (0x2000 <= opcode && opcode < 0x3000) {
-    cpu->stack_pointer++;
-    cpu->stack[cpu->stack_pointer] = cpu->program_counter;
-    cpu->program_counter = opcode & 0x0fff;
+    cpu->stackPointer++;
+    cpu->stack[cpu->stackPointer] = cpu->programCounter;
+    cpu->programCounter = opcode & 0x0fff;
 
   } else if (0x3000 <= opcode && opcode < 0x4000) {
     if ((cpu->V[(opcode & 0x0f00) >> 8]) == (opcode & 0x00ff)) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x4000 <= opcode && opcode < 0x5000) {
     if ((cpu->V[(opcode & 0x0f00) >> 8]) != (opcode & 0x00ff)) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x5000 <= opcode && opcode < 0x6000) {
     if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4]) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x6000 <= opcode && opcode < 0x7000) {
     cpu->V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x7000 <= opcode && opcode < 0x8000) {
     cpu->V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x8000 <= opcode && opcode < 0x9000) {
     executeMathInstruction(opcode, cpu);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0x9000 <= opcode && opcode <= 0xa000) {
     if ((opcode & 0x000f) != 0) { return; }
 
     if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4]) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0xa000 <= opcode && opcode < 0xb000) {
     cpu->I = opcode & 0x0fff;
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0xb000 <= opcode && opcode < 0xc000) {
-    cpu->program_counter = cpu->V[0x0] + (opcode & 0x0fff);
+    cpu->programCounter = cpu->V[0x0] + (opcode & 0x0fff);
 
   } else if (0xc000 <= opcode && opcode < 0xd000) {
     uint8 num = generateRandomNumber();
     cpu->V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0xd000 <= opcode && opcode < 0xe000) {
     uint8 height = opcode & 0x000f;
@@ -136,22 +136,22 @@ void readOpcode(uint16 opcode, struct CPU *cpu) {
 
         if (pixel & (0x80 >> col)) {
           uint16 frame = x + (y * 64);
-          if (cpu->frame_buffer[frame]) { cpu->V[0xf] = 1; }
+          if (cpu->frameBuffer[frame]) { cpu->V[0xf] = 1; }
 
-          cpu->frame_buffer[frame] ^= 1;
+          cpu->frameBuffer[frame] ^= 1;
         }
       }
     }
 
     // TODO: implement draw flag
-    putFrameBuffer(cpu->frame_buffer);
+    putFrameBuffer(cpu->frameBuffer);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0xe000 <= opcode && opcode < 0xf000) {
     readKeyOpcode(opcode, cpu);
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else if (0xf000 <= opcode && opcode <= 0xffff) {
     if ((opcode & 0x00ff) == 0x0a) {
@@ -160,7 +160,7 @@ void readOpcode(uint16 opcode, struct CPU *cpu) {
       executeTimerInstruction(opcode, cpu);
     }
 
-    cpu->program_counter += 2;
+    cpu->programCounter += 2;
 
   } else {
     printf("Cannont match opcode: %x\n", opcode);
@@ -233,15 +233,15 @@ void executeTimerInstruction(uint16 opcode, struct CPU *cpu) {
 
   switch (opcode & 0x0ff) {
   case 0x07:
-    cpu->V[x] = cpu->delay_timer;
+    cpu->V[x] = cpu->delayTimer;
     break;
 
   case 0x15:
-    cpu->delay_timer = cpu->V[x];
+    cpu->delayTimer = cpu->V[x];
     break;
 
   case 0x18:
-    cpu->sound_timer = cpu->V[x];
+    cpu->SoundTimer = cpu->V[x];
     break;
 
   case 0x1e:
@@ -285,17 +285,17 @@ void executeTimerInstruction(uint16 opcode, struct CPU *cpu) {
 }
 
 uint8 generateRandomNumber() {
-  FILE *random_file = fopen("/dev/urandom", "r");
-  if (random_file < 0) {
+  FILE *randomFile = fopen("/dev/urandom", "r");
+  if (randomFile < 0) {
     printf("Cannot open\n");
     return -1;
   } else {
-    uint8 random_data[2];
-    ssize_t result = fread(random_data, sizeof(uint8), (sizeof(random_data) / sizeof(uint8)), random_file);
+    uint8 randomData[2];
+    ssize_t result = fread(randomData, sizeof(uint8), (sizeof(randomData) / sizeof(uint8)), randomFile);
     if (result < 0) {
       printf("cannon read\n");
     } else {
-      return random_data[0];
+      return randomData[0];
     }
   }
 

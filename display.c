@@ -1,12 +1,12 @@
 #include "display.h"
 
-void clearDisplay(uint8 *frame_buffer) {
+void clearDisplay(uint8 *frameBuffer) {
   for (uint16 i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT); i++) {
-    frame_buffer[i] = 0x0;
+    frameBuffer[i] = 0x0;
   }
 }
 
-void putFrameBuffer(uint8 *frame_buffer) {
+void putFrameBuffer(uint8 *frameBuffer) {
   printf("\n\n\t\t");
 
   // Debugging
@@ -25,7 +25,7 @@ void putFrameBuffer(uint8 *frame_buffer) {
 
   for (uint8 y = 0; y < 32; y++) {
     for (uint8 x = 0; x < 64; x++) {
-      if (frame_buffer[x + (y * 64)] == 1) {
+      if (frameBuffer[x + (y * 64)] == 1) {
         printf("*");
       } else {
         printf(" ");

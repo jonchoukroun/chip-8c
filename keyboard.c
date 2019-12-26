@@ -14,13 +14,13 @@ void readKeyOpcode(uint16 opcode, struct CPU *cpu) {
   switch (opcode & 0x00ff) {
   case 0x9e:
     if (cpu->keyboard[cpu->V[(opcode & 0x0f00) >> 8]] != 0) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
     break;
 
   case 0xa1:
     if (cpu->keyboard[cpu->V[(opcode & 0x0f00) >> 8]] == 0) {
-      cpu->program_counter += 2;
+      cpu->programCounter += 2;
     }
     break;
 
