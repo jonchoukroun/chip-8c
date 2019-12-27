@@ -1,30 +1,6 @@
 #include <stdlib.h>
 #include "chip8_io.h"
 
-void initializeDisplay() {
-  WINDOW *mainWindow;
-
-  initscr();
-  cbreak();
-  noecho();
-  keypad(stdscr, 1);
-
-  uint8 startY = (LINES - WINDOW_HEIGHT) / 2;
-  uint8 startX = (COLS - WINDOW_WIDTH) / 2;
-
-  printw("Press F1 to exit\n");
-
-  refresh();
-
-  mainWindow = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, startY, startX);
-  box(mainWindow, 0, 0);
-  wrefresh(mainWindow);
-}
-
-void closeDisplay() {
-  endwin();
-}
-
 uint8 keyboard[KEYBOARD_SIZE] = {
   0x2c,   // 0 -- (,)
   0x37,   // 1 -- (7)
@@ -44,11 +20,31 @@ uint8 keyboard[KEYBOARD_SIZE] = {
   0x2f    // f -- (/)
 };
 
-struct HashTable *createKeyTable() {
-  struct HashTable *keyTable;
+WINDOW * initializeDisplay() {
+  WINDOW *mainWindow;
 
-  keyTable = malloc(sizeof(struct HashTable));
+  initscr();
+  clear();
+  cbreak();
+  noecho();
 
+  uint8 startY = (LINES - WINDOW_HEIGHT) / 2;
+  uint8 startX = (COLS - WINDOW_WIDTH) / 2;
+
+  printw("Press F1 to exit\n");
+
+  refresh();
+
+  mainWindow = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, startY, startX);
+  nodelay(mainWindow, 1);
+  keypad(mainWindow, 1);
+  wrefresh(mainWindow);
+
+  return mainWindow;
+}
+
+struct HashTable * initializeInput() {
+  struct HashTable *keyTable = malloc(sizeof(struct HashTable));
   keyTable->entries = (struct HashEntry **)malloc(KEYBOARD_SIZE * sizeof(struct HashEntry));
 
   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
@@ -72,11 +68,14 @@ struct HashTable *createKeyTable() {
   return keyTable;
 }
 
-// void putTable(struct HashTable *keyTable) {
-//   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-//     printf("%x: %x\n", keyboard[i], getKeyValue(keyTable, keyboard[i]));
-//   }
-// }
+void setKeyState(WINDOW *window, uint8 *keyState, struct HashTable *keyTable) {
+  uint8 key;
+  if ((key = wgetch(window))) {
+    keyState[key] = getKeyValue(keyTable, key);
+  } else {
+    return;
+  }
+}
 
 uint8 getKeyValue(struct HashTable *keyTable, uint8 key) {
   uint8 idx = hashKey(key);
@@ -93,6 +92,45 @@ uint8 getKeyValue(struct HashTable *keyTable, uint8 key) {
   return 0xff;
 }
 
+// void putTable(struct HashTable *keyTable) {
+//   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+//     printf("%x: %x\n", keyboard[i], getKeyValue(keyTable, keyboard[i]));
+//   }
+// }
+
 uint8 hashKey(uint8 key) {
   return key % KEYBOARD_SIZE;
+}
+
+uint8 validateKeyPress(uint8 key) {
+  // if (key == NULL) { return 0; }
+
+  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+    if (keyboard[i] == key) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+WINDOW * drawFrameBuffer(WINDOW * window, uint8 *frameBuffer) {
+  for (uint8 y = 0; y < DISPLAY_HEIGHT; y++) {
+    for (uint8 x = 0; x < DISPLAY_WIDTH; x++) {
+      if (frameBuffer[x + (y * DISPLAY_WIDTH)] == 1) {
+        mvwaddch(window, y, x, '*');
+      }
+    }
+  }
+  wrefresh(window);
+
+  return window;
+}
+
+void destroyIO(WINDOW *window, struct HashTable *keyTable) {
+  free(keyTable->entries);
+  free(keyTable);
+
+  delwin(window);
+  endwin();
 }
