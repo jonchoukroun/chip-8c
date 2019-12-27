@@ -44,7 +44,7 @@ uint8 executeOpcode(struct CPU *, uint16);
 
 uint8 executeMathInstruction(struct CPU *, uint16);
 
-uint8 executeTimerInstruction(struct CPU *, uint16);
+uint8 executeFInstructions(struct CPU *, uint16);
 
 uint8 executeInputInstruction(struct CPU *, uint16);
 

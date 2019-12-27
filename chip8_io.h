@@ -26,13 +26,13 @@ void setKeyState(WINDOW *, uint8 *, struct HashTable *);
 
 uint8 getKeyValue(struct HashTable *, uint8);
 
-// void putTable(struct HashTable *);
-
 uint8 hashKey(uint8);
 
 uint8 validateKeyPress(uint8);
 
-WINDOW * drawFrameBuffer(WINDOW *, uint8 *);
+void drawFrameBuffer(WINDOW *, uint8 *);
+
+void testFrameBuffer(WINDOW *, uint8 *);
 
 void destroyIO(WINDOW *, struct HashTable *);
 

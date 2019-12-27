@@ -30,16 +30,6 @@ struct CPU * initialize() {
 
   cpu->drawFlag = 0;
 
-  // testing
-  cpu->V[0x0] = 0x0;
-  cpu->V[0x1] = 0x6;
-  cpu->I = 0xb * 5;
-
-  cpu->RAM[cpu->programCounter] = 0xd0;
-  cpu->RAM[cpu->programCounter + 1] = 0x05;
-  cpu->RAM[cpu->programCounter + 2] = 0xd1;
-  cpu->RAM[cpu->programCounter + 3] = 0x05;
-
   return cpu;
 }
 
@@ -55,6 +45,7 @@ uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
     if ((opcode & 0x00ff) == 0xe0) {
       // TODO: use ncurses
       clearDisplay(cpu->frameBuffer);
+      cpu->drawFlag = 1;
 
       cpu->programCounter += 2;
     } else if ((opcode & 0x00ff) == 0xee) {
@@ -169,8 +160,6 @@ uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
       }
     }
     cpu->drawFlag = 1;
-    // testing
-    cpu->I = 0x0 * 5;
     cpu->programCounter += 2;
     break;
   }
@@ -182,12 +171,7 @@ uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
     break;
 
   case 0xf:
-    if ((opcode & 0x00ff) == 0x0a) {
-      status = executeInputInstruction(cpu, opcode);
-    } else {
-      status = executeTimerInstruction(cpu, opcode);
-    }
-
+    status = executeFInstructions(cpu, opcode);
     cpu->programCounter += 2;
     break;
 
@@ -262,14 +246,20 @@ uint8 executeMathInstruction(struct CPU *cpu, uint16 opcode) {
   return 1;
 }
 
-uint8 executeTimerInstruction(struct CPU *cpu, uint16 opcode) {
+uint8 executeFInstructions(struct CPU *cpu, uint16 opcode) {
   uint8 x = (opcode & 0x0f00) >> 8;
-  uint8 decimal;
 
   switch (opcode & 0x0ff) {
   case 0x07:
     cpu->V[x] = cpu->delayTimer;
     break;
+
+  case 0x0a: {
+    uint8 key = getch();
+    // printw("Key pressed: %c\n", key);
+    cpu->V[x] = key;
+    break;
+  }
 
   case 0x15:
     cpu->delayTimer = cpu->V[x];
@@ -287,8 +277,8 @@ uint8 executeTimerInstruction(struct CPU *cpu, uint16 opcode) {
     cpu->I = cpu->V[x] * 5;
     break;
 
-  case 0x33:
-    decimal = cpu->V[x];
+  case 0x33: {
+    uint8 decimal = cpu->V[x];
     uint8 sig = 100;
 
     while (decimal > 0) {
@@ -298,6 +288,7 @@ uint8 executeTimerInstruction(struct CPU *cpu, uint16 opcode) {
       cpu->I += 1;
     }
     break;
+  }
 
   case 0x55:
     for (uint8 i = 0x0; i <= x; i++) {
@@ -322,8 +313,6 @@ uint8 executeTimerInstruction(struct CPU *cpu, uint16 opcode) {
 }
 
 uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode) {
-  uint8 key;
-
   switch (opcode & 0x00ff) {
   case 0x9e:
     if (cpu->keyState[cpu->V[(opcode & 0x0f00) >> 8]] != 0) {
@@ -335,12 +324,6 @@ uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode) {
     if (cpu->keyState[cpu->V[(opcode & 0x0f00) >> 8]] == 0) {
       cpu->programCounter += 2;
     }
-    break;
-
-  case 0x0a:
-    // TODO: Wait for keypress...
-    key = 0;
-    cpu->V[(opcode & 0x0f00) >> 8] = key;
     break;
 
   default:
