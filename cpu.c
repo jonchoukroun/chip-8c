@@ -1,36 +1,44 @@
 #include "cpu.h"
 #include "fontset.h"
 #include "display.h"
-#include "keyboard.h"
+#include "chip8_io.h"
 
-struct CPU initialize() {
-  struct CPU cpu;
-  cpu.programCounter = 0x200;
-  cpu.stackPointer = 0x0;
+struct CPU * initialize() {
+  struct CPU *cpu = malloc(sizeof(struct CPU));
+  cpu->programCounter = 0x200;
+  cpu->stackPointer = 0x0;
 
   for (uint16 i = 0; i < RAM_SIZE; i++) {
-    cpu.RAM[i] = 0;
+    cpu->RAM[i] = 0;
   }
 
   for (uint8 i = 0; i < 80; i++) {
-    cpu.RAM[i] = fontSet[i];
+    cpu->RAM[i] = fontSet[i];
   }
 
   for (uint8 i = 0; i <= 0xf; i++) {
-    cpu.V[i] = 0;
+    cpu->V[i] = 0;
   }
 
   for (uint16 i = 0; i < 2048; i++) {
-    cpu.frameBuffer[i] = 0;
+    cpu->frameBuffer[i] = 0;
   }
 
-  // testing
-  cpu.V[0x0] = 0xa;
-  cpu.V[0x1] = 0x5;
-  cpu.I = 0xb * 5;
+  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+    cpu->keyState[i] = 0;
+  }
 
-  cpu.RAM[cpu.programCounter] = 0xd0;
-  cpu.RAM[cpu.programCounter + 1] = 0x05;
+  cpu->drawFlag = 0;
+
+  // testing
+  cpu->V[0x0] = 0x0;
+  cpu->V[0x1] = 0x6;
+  cpu->I = 0xb * 5;
+
+  cpu->RAM[cpu->programCounter] = 0xd0;
+  cpu->RAM[cpu->programCounter + 1] = 0x05;
+  cpu->RAM[cpu->programCounter + 2] = 0xd1;
+  cpu->RAM[cpu->programCounter + 3] = 0x05;
 
   return cpu;
 }
@@ -39,90 +47,108 @@ uint16 fetchOpcode(struct CPU *cpu) {
   return cpu->RAM[cpu->programCounter] << 8 | cpu->RAM[cpu->programCounter + 1];
 }
 
-void readOpcode(uint16 opcode, struct CPU *cpu) {
-  printf("pc: %x\n", cpu->programCounter);
-  printf("Reading opcode: %x\n", opcode);
-  if (opcode == 0x00e0) {
-    clearDisplay(cpu->frameBuffer);
+uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
+  uint8 status = 1;
 
-    cpu->programCounter += 2;
+  switch ((opcode & 0xf000) >> 12) {
+  case 0x0:
+    if ((opcode & 0x00ff) == 0xe0) {
+      // TODO: use ncurses
+      clearDisplay(cpu->frameBuffer);
 
-  } else if (opcode == 0x00ee) {
-    cpu->programCounter = cpu->stack[cpu->stackPointer];
-    cpu->stackPointer--;
+      cpu->programCounter += 2;
+    } else if ((opcode & 0x00ff) == 0xee) {
+      cpu->programCounter = cpu->stack[cpu->stackPointer];
+      cpu->stackPointer--;
+    } else {
+      // Ignored jump to subroutine
+      cpu->programCounter +=2;
+    }
+    break;
 
-  } else if (0x0000 <= opcode && opcode < 0x1000) {
-    printf("Ignored jump to routine at: %X\n", opcode & 0x0fff);
-    cpu->programCounter += 2;
-
-  } else if (0x1000 <= opcode && opcode < 0x2000) {
+  case 0x1:
     cpu->programCounter = opcode & 0x0fff;
+    break;
 
-  } else if (0x2000 <= opcode && opcode < 0x3000) {
+  case 0x2:
     cpu->stackPointer++;
     cpu->stack[cpu->stackPointer] = cpu->programCounter;
     cpu->programCounter = opcode & 0x0fff;
+    break;
 
-  } else if (0x3000 <= opcode && opcode < 0x4000) {
+  case 0x3:
     if ((cpu->V[(opcode & 0x0f00) >> 8]) == (opcode & 0x00ff)) {
       cpu->programCounter += 2;
     }
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x4000 <= opcode && opcode < 0x5000) {
+  case 0x4:
     if ((cpu->V[(opcode & 0x0f00) >> 8]) != (opcode & 0x00ff)) {
       cpu->programCounter += 2;
     }
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x5000 <= opcode && opcode < 0x6000) {
+  case 0x5:
     if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4]) {
       cpu->programCounter += 2;
     }
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x6000 <= opcode && opcode < 0x7000) {
+  case 0x6:
     cpu->V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x7000 <= opcode && opcode < 0x8000) {
+  case 0x7:
     cpu->V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x8000 <= opcode && opcode < 0x9000) {
-    executeMathInstruction(opcode, cpu);
+  case 0x8:
+    status = executeMathInstruction(cpu, opcode);
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0x9000 <= opcode && opcode <= 0xa000) {
-    if ((opcode & 0x000f) != 0) { return; }
+  case 0x9:
+    if ((opcode & 0x000f) != 0) {
+      status = 0;
+    }
 
     if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4]) {
       cpu->programCounter += 2;
     }
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0xa000 <= opcode && opcode < 0xb000) {
+  case 0xa:
     cpu->I = opcode & 0x0fff;
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0xb000 <= opcode && opcode < 0xc000) {
+  case 0xb:
     cpu->programCounter = cpu->V[0x0] + (opcode & 0x0fff);
+    break;
 
-  } else if (0xc000 <= opcode && opcode < 0xd000) {
+  case 0xc: {
     uint8 num = generateRandomNumber();
     cpu->V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
 
     cpu->programCounter += 2;
+    break;
+  }
 
-  } else if (0xd000 <= opcode && opcode < 0xe000) {
+  case 0xd: {
     uint8 height = opcode & 0x000f;
     uint8 width = 0x8;
     uint16 pixel;
@@ -142,32 +168,38 @@ void readOpcode(uint16 opcode, struct CPU *cpu) {
         }
       }
     }
+    cpu->drawFlag = 1;
+    // testing
+    cpu->I = 0x0 * 5;
+    cpu->programCounter += 2;
+    break;
+  }
 
-    // TODO: implement draw flag
-    putFrameBuffer(cpu->frameBuffer);
+  case 0xe:
+    status = executeInputInstruction(cpu, opcode);
 
     cpu->programCounter += 2;
+    break;
 
-  } else if (0xe000 <= opcode && opcode < 0xf000) {
-    readKeyOpcode(opcode, cpu);
-
-    cpu->programCounter += 2;
-
-  } else if (0xf000 <= opcode && opcode <= 0xffff) {
+  case 0xf:
     if ((opcode & 0x00ff) == 0x0a) {
-      readKeyOpcode(opcode, cpu);
+      status = executeInputInstruction(cpu, opcode);
     } else {
-      executeTimerInstruction(opcode, cpu);
+      status = executeTimerInstruction(cpu, opcode);
     }
 
     cpu->programCounter += 2;
+    break;
 
-  } else {
-    printf("Cannont match opcode: %x\n", opcode);
+  default:
+    // printw("Cannont match opcode: %x\n", opcode);
+    status = 0;
   }
+
+  return status;
 }
 
-void executeMathInstruction(uint16 opcode, struct CPU *cpu) {
+uint8 executeMathInstruction(struct CPU *cpu, uint16 opcode) {
   uint8 x = (opcode & 0x0f00) >> 8;
   uint8 y = (opcode & 0x00f0) >> 4;
   switch (opcode & 0x000f) {
@@ -223,11 +255,14 @@ void executeMathInstruction(uint16 opcode, struct CPU *cpu) {
     break;
 
   default:
-    printf("Could not match opcode %x\n", opcode);
+    // printw("Could not match opcode %x\n", opcode);
+    return 0;
   }
+
+  return 1;
 }
 
-void executeTimerInstruction(uint16 opcode, struct CPU *cpu) {
+uint8 executeTimerInstruction(struct CPU *cpu, uint16 opcode) {
   uint8 x = (opcode & 0x0f00) >> 8;
   uint8 decimal;
 
@@ -241,7 +276,7 @@ void executeTimerInstruction(uint16 opcode, struct CPU *cpu) {
     break;
 
   case 0x18:
-    cpu->SoundTimer = cpu->V[x];
+    cpu->soundTimer = cpu->V[x];
     break;
 
   case 0x1e:
@@ -279,25 +314,61 @@ void executeTimerInstruction(uint16 opcode, struct CPU *cpu) {
     break;
 
   default:
-    printf("Could not match opcode %x\n", opcode);
-    break;
+    // printw("Could not match opcode %x\n", opcode);
+    return 0;
   }
+
+  return 1;
+}
+
+uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode) {
+  uint8 key;
+
+  switch (opcode & 0x00ff) {
+  case 0x9e:
+    if (cpu->keyState[cpu->V[(opcode & 0x0f00) >> 8]] != 0) {
+      cpu->programCounter += 2;
+    }
+    break;
+
+  case 0xa1:
+    if (cpu->keyState[cpu->V[(opcode & 0x0f00) >> 8]] == 0) {
+      cpu->programCounter += 2;
+    }
+    break;
+
+  case 0x0a:
+    // TODO: Wait for keypress...
+    key = 0;
+    cpu->V[(opcode & 0x0f00) >> 8] = key;
+    break;
+
+  default:
+    // printw("Could not match opcode %x\n", opcode);
+    return 0;
+  }
+
+  return 1;
 }
 
 uint8 generateRandomNumber() {
   FILE *randomFile = fopen("/dev/urandom", "r");
   if (randomFile < 0) {
-    printf("Cannot open\n");
+    // printw("Cannot open\n");
     return -1;
   } else {
     uint8 randomData[2];
     ssize_t result = fread(randomData, sizeof(uint8), (sizeof(randomData) / sizeof(uint8)), randomFile);
     if (result < 0) {
-      printf("cannon read\n");
+      // printw("cannon read\n");
     } else {
       return randomData[0];
     }
   }
 
   return -1;
+}
+
+void destroyCPU(struct CPU *cpu) {
+  free(cpu);
 }

@@ -2,6 +2,7 @@
 #define CHIP_8
 
 #include <stdint.h>
+#include <stdlib.h>
 // remove when exporting functions to other c file
 #include <stdio.h>
 
@@ -23,27 +24,32 @@ struct CPU {
   uint8 stackPointer;
 
   uint8 delayTimer;
-  uint8 SoundTimer;
+  uint8 soundTimer;
 
   uint8 frameBuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
+  uint8 drawFlag;
 
   uint16 programCounter;
 
   uint8 RAM[RAM_SIZE];
 
-  uint8 keyboard[KEYBOARD_SIZE];
+  uint8 keyState[KEYBOARD_SIZE];
 };
 
-struct CPU initialize();
+struct CPU * initialize();
 
 uint16 fetchOpcode(struct CPU *);
 
-void readOpcode(uint16, struct CPU *);
+uint8 executeOpcode(struct CPU *, uint16);
 
-void executeMathInstruction(uint16, struct CPU *);
+uint8 executeMathInstruction(struct CPU *, uint16);
 
-void executeTimerInstruction(uint16, struct CPU *);
+uint8 executeTimerInstruction(struct CPU *, uint16);
+
+uint8 executeInputInstruction(struct CPU *, uint16);
 
 uint8 generateRandomNumber();
+
+void destroyCPU(struct CPU *);
 
 #endif
