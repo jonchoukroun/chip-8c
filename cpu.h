@@ -34,9 +34,11 @@ struct CPU {
   uint8 RAM[RAM_SIZE];
 
   uint8 keyState[KEYBOARD_SIZE];
+
+  struct HashTable *keyTable;
 };
 
-struct CPU * initialize();
+struct CPU * initialize(struct HashTable *);
 
 uint16 fetchOpcode(struct CPU *);
 

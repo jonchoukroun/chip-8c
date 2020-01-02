@@ -3,7 +3,7 @@
 #include "display.h"
 #include "chip8_io.h"
 
-struct CPU * initialize() {
+struct CPU * initialize(struct HashTable *keyTable) {
   struct CPU *cpu = malloc(sizeof(struct CPU));
   cpu->programCounter = 0x200;
   cpu->stackPointer = 0x0;
@@ -23,6 +23,8 @@ struct CPU * initialize() {
   for (uint16 i = 0; i < 2048; i++) {
     cpu->frameBuffer[i] = 0;
   }
+
+  cpu->keyTable = keyTable;
 
   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
     cpu->keyState[i] = 0;
@@ -256,8 +258,7 @@ uint8 executeFInstructions(struct CPU *cpu, uint16 opcode) {
 
   case 0x0a: {
     uint8 key = getch();
-    // printw("Key pressed: %c\n", key);
-    cpu->V[x] = key;
+    cpu->V[x] = getKeyValue(cpu->keyTable, key);
     break;
   }
 

@@ -36,4 +36,7 @@ void testFrameBuffer(WINDOW *, uint8 *);
 
 void destroyIO(WINDOW *, struct HashTable *);
 
+// debugging
+void putHashTable(struct HashTable *);
+
 #endif

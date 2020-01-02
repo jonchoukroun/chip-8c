@@ -34,7 +34,7 @@ WINDOW * initializeDisplay() {
   // printw("Press F1 to exit\n");
   refresh();
 
-  mainWindow = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, startY, startX);
+  mainWindow = newwin(WINDOW_HEIGHT + 2, WINDOW_WIDTH + 2, startY - 2, startX - 2);
   nodelay(mainWindow, 1);
   keypad(mainWindow, 1);
   box(mainWindow, 0, 0);
@@ -121,10 +121,13 @@ void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer) {
   for (uint8 y = 0; y < DISPLAY_HEIGHT; y++) {
     for (uint8 x = 0; x < DISPLAY_WIDTH; x++) {
       if (frameBuffer[x + (y * DISPLAY_WIDTH)] == 1) {
-        mvwaddch(window, y, x, '*');
+        mvwaddch(window, y + 1, x + 1, ACS_CKBOARD);
+      } else {
+        mvwaddch(window, y + 1, x + 1, ' ');
       }
     }
   }
+  box(window, 0, 0);
   wrefresh(window);
 }
 
@@ -134,4 +137,25 @@ void destroyIO(WINDOW *window, struct HashTable *keyTable) {
 
   delwin(window);
   endwin();
+}
+
+void putHashTable(struct HashTable *keyTable) {
+  struct HashEntry *queue[KEYBOARD_SIZE];
+  uint8 counter = 0;
+
+  struct HashEntry *temp;
+  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+    temp = keyTable->entries[i];
+    while (temp != NULL) {
+      queue[counter] = temp;
+      counter++;
+      temp = temp->next;
+    }
+  }
+
+  while (counter > 0) {
+    struct HashEntry *node = queue[counter - 1];
+    printf("%x: %x\n", node->key, node->value);
+    counter--;
+  }
 }
