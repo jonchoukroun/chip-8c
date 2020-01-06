@@ -2,6 +2,14 @@
 #include "fontset.h"
 #include "chip8_io.h"
 
+uint8 executeMathInstruction(struct CPU *, uint16);
+
+uint8 executeFInstructions(struct CPU *, uint16);
+
+uint8 executeInputInstruction(struct CPU *, uint16);
+
+uint8 generateRandomNumber();
+
 struct CPU * initialize(struct HashTable *keyTable)
 {
   struct CPU *cpu = malloc(sizeof(struct CPU));
