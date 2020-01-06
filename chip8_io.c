@@ -22,7 +22,8 @@ uint8 keyboard[KEYBOARD_SIZE] = {
 
 uint8 hashKey(uint8);
 
-WINDOW * initializeDisplay() {
+WINDOW * initializeDisplay()
+{
   WINDOW *mainWindow;
 
   initscr();
@@ -45,7 +46,8 @@ WINDOW * initializeDisplay() {
   return mainWindow;
 }
 
-struct HashTable * initializeInput() {
+struct HashTable * initializeInput()
+{
   struct HashTable *keyTable = malloc(sizeof(struct HashTable));
 
   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
@@ -69,7 +71,8 @@ struct HashTable * initializeInput() {
   return keyTable;
 }
 
-void setKeyState(WINDOW *window, uint8 *keyState, struct HashTable *keyTable) {
+void setKeyState(WINDOW *window, uint8 *keyState, struct HashTable *keyTable)
+{
   uint8 key;
   if ((key = wgetch(window))) {
     keyState[key] = getKeyValue(keyTable, key);
@@ -78,7 +81,8 @@ void setKeyState(WINDOW *window, uint8 *keyState, struct HashTable *keyTable) {
   }
 }
 
-uint8 getKeyValue(struct HashTable *keyTable, uint8 key) {
+uint8 getKeyValue(struct HashTable *keyTable, uint8 key)
+{
   uint8 idx = hashKey(key);
   struct HashEntry *temp;
 
@@ -115,13 +119,15 @@ void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer)
   wrefresh(window);
 }
 
-void destroyIO(WINDOW *window, struct HashTable *keyTable) {
+void destroyIO(WINDOW *window, struct HashTable *keyTable)
+{
   free(keyTable);
 
   delwin(window);
   endwin();
 }
 
-uint8 hashKey(uint8 key) {
+uint8 hashKey(uint8 key)
+{
   return key % KEYBOARD_SIZE;
 }

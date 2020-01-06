@@ -1,9 +1,9 @@
 #include "cpu.h"
 #include "fontset.h"
-#include "display.h"
 #include "chip8_io.h"
 
-struct CPU * initialize(struct HashTable *keyTable) {
+struct CPU * initialize(struct HashTable *keyTable)
+{
   struct CPU *cpu = malloc(sizeof(struct CPU));
   cpu->programCounter = 0x200;
   cpu->stackPointer = 0x0;
@@ -35,18 +35,19 @@ struct CPU * initialize(struct HashTable *keyTable) {
   return cpu;
 }
 
-uint16 fetchOpcode(struct CPU *cpu) {
+uint16 fetchOpcode(struct CPU *cpu)
+{
   return cpu->RAM[cpu->programCounter] << 8 | cpu->RAM[cpu->programCounter + 1];
 }
 
-uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
+uint8 executeOpcode(struct CPU *cpu, uint16 opcode)
+{
   uint8 status = 1;
 
   switch ((opcode & 0xf000) >> 12) {
   case 0x0:
     if ((opcode & 0x00ff) == 0xe0) {
-      // TODO: use ncurses
-      clearDisplay(cpu->frameBuffer);
+      clearFrameBuffer(cpu->frameBuffer);
       cpu->drawFlag = 1;
 
       cpu->programCounter += 2;
@@ -185,7 +186,8 @@ uint8 executeOpcode(struct CPU *cpu, uint16 opcode) {
   return status;
 }
 
-uint8 executeMathInstruction(struct CPU *cpu, uint16 opcode) {
+uint8 executeMathInstruction(struct CPU *cpu, uint16 opcode)
+{
   uint8 x = (opcode & 0x0f00) >> 8;
   uint8 y = (opcode & 0x00f0) >> 4;
   switch (opcode & 0x000f) {
@@ -248,7 +250,8 @@ uint8 executeMathInstruction(struct CPU *cpu, uint16 opcode) {
   return 1;
 }
 
-uint8 executeFInstructions(struct CPU *cpu, uint16 opcode) {
+uint8 executeFInstructions(struct CPU *cpu, uint16 opcode)
+{
   uint8 x = (opcode & 0x0f00) >> 8;
 
   switch (opcode & 0x0ff) {
@@ -313,7 +316,8 @@ uint8 executeFInstructions(struct CPU *cpu, uint16 opcode) {
   return 1;
 }
 
-uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode) {
+uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode)
+{
   switch (opcode & 0x00ff) {
   case 0x9e:
     if (cpu->keyState[cpu->V[(opcode & 0x0f00) >> 8]] != 0) {
@@ -335,7 +339,8 @@ uint8 executeInputInstruction(struct CPU *cpu, uint16 opcode) {
   return 1;
 }
 
-uint8 generateRandomNumber() {
+uint8 generateRandomNumber()
+{
   FILE *randomFile = fopen("/dev/urandom", "r");
   if (randomFile < 0) {
     // printw("Cannot open\n");

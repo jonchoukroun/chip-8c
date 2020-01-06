@@ -117,7 +117,8 @@ uint8 loadProgram(struct CPU *);
 
 void decrementCounters(struct CPU *);
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
   WINDOW *window = initializeDisplay();
   struct HashTable *keyTable = initializeInput();
   struct CPU *cpu = initialize(keyTable);
@@ -158,7 +159,8 @@ int main(int argc, char const *argv[]) {
   return 0;
 }
 
-uint8 runCycle(struct CPU *cpu) {
+uint8 runCycle(struct CPU *cpu)
+{
   if (cpu->programCounter == 0) {
     return 0;
   }
@@ -181,7 +183,8 @@ uint8 runCycle(struct CPU *cpu) {
   return 1;
 }
 
-uint8 loadProgram(struct CPU *cpu) {
+uint8 loadProgram(struct CPU *cpu)
+{
   // Test instructions, start loading at RAM[0x200]
   uint16 *program = keyDisplay;
   for (uint8 i = 0; i < PROGRAM_SIZE; i++) {
@@ -194,7 +197,8 @@ uint8 loadProgram(struct CPU *cpu) {
   return 1;
 }
 
-void decrementCounters(struct CPU *cpu) {
+void decrementCounters(struct CPU *cpu)
+{
   if (cpu->delayTimer > 0) {
     --cpu->delayTimer;
   }
