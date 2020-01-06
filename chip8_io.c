@@ -45,7 +45,6 @@ WINDOW * initializeDisplay() {
 
 struct HashTable * initializeInput() {
   struct HashTable *keyTable = malloc(sizeof(struct HashTable));
-  keyTable->entries = (struct HashEntry **)malloc(KEYBOARD_SIZE * sizeof(struct HashEntry));
 
   for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
     struct HashEntry *entry;
@@ -132,7 +131,6 @@ void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer) {
 }
 
 void destroyIO(WINDOW *window, struct HashTable *keyTable) {
-  free(keyTable->entries);
   free(keyTable);
 
   delwin(window);

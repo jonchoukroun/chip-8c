@@ -15,7 +15,7 @@ struct HashEntry {
 
 struct HashTable {
   uint8 size;
-  struct HashEntry **entries;
+  struct HashEntry *entries[KEYBOARD_SIZE];
 };
 
 WINDOW * initializeDisplay();
