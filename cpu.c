@@ -12,33 +12,15 @@ uint8 generateRandomNumber();
 
 struct CPU * initialize(struct HashTable *keyTable)
 {
-  struct CPU *cpu = malloc(sizeof(struct CPU));
+  struct CPU *cpu = calloc(1, sizeof(struct CPU));
   cpu->programCounter = 0x200;
   cpu->stackPointer = 0x0;
 
-  for (uint16 i = 0; i < RAM_SIZE; i++) {
-    cpu->RAM[i] = 0;
-  }
-
-  for (uint8 i = 0; i < 80; i++) {
+  for (uint8 i = 0; i < FONTSET_SIZE; i++) {
     cpu->RAM[i] = fontSet[i];
   }
 
-  for (uint8 i = 0; i <= 0xf; i++) {
-    cpu->V[i] = 0;
-  }
-
-  for (uint16 i = 0; i < 2048; i++) {
-    cpu->frameBuffer[i] = 0;
-  }
-
   cpu->keyTable = keyTable;
-
-  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-    cpu->keyState[i] = 0;
-  }
-
-  cpu->drawFlag = 0;
 
   return cpu;
 }
@@ -357,7 +339,7 @@ uint8 generateRandomNumber()
     uint8 randomData[2];
     ssize_t result = fread(randomData, sizeof(uint8), (sizeof(randomData) / sizeof(uint8)), randomFile);
     if (result < 0) {
-      // printw("cannon read\n");
+      // printw("cannot read\n");
     } else {
       return randomData[0];
     }
