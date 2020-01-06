@@ -93,7 +93,15 @@ uint8 getKeyValue(struct HashTable *keyTable, uint8 key) {
   return 0xff;
 }
 
-void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer) {
+void clearFrameBuffer(uint8 *frameBuffer)
+{
+  for (uint16 i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT); i++) {
+    frameBuffer[i] = 0x0;
+  }
+}
+
+void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer)
+{
   for (uint8 y = 0; y < DISPLAY_HEIGHT; y++) {
     for (uint8 x = 0; x < DISPLAY_WIDTH; x++) {
       if (frameBuffer[x + (y * DISPLAY_WIDTH)] == 1) {

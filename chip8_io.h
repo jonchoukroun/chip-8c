@@ -26,6 +26,8 @@ void setKeyState(WINDOW *, uint8 *, struct HashTable *);
 
 uint8 getKeyValue(struct HashTable *, uint8);
 
+void clearFrameBuffer(uint8 *);
+
 void drawFrameBuffer(WINDOW *, uint8 *);
 
 void destroyIO(WINDOW *, struct HashTable *);
