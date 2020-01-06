@@ -20,6 +20,8 @@ uint8 keyboard[KEYBOARD_SIZE] = {
   0x2f    // f -- (/)
 };
 
+uint8 hashKey(uint8);
+
 WINDOW * initializeDisplay() {
   WINDOW *mainWindow;
 
@@ -91,31 +93,6 @@ uint8 getKeyValue(struct HashTable *keyTable, uint8 key) {
   return 0xff;
 }
 
-uint8 hashKey(uint8 key) {
-  return key % KEYBOARD_SIZE;
-}
-
-uint8 validateKeyPress(uint8 key) {
-  // if (key == NULL) { return 0; }
-
-  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-    if (keyboard[i] == key) {
-      return 1;
-    }
-  }
-
-  return 0;
-}
-
-void testFrameBuffer(WINDOW *window, uint8 *frameBuffer) {
-  uint8 onesCount = 0;
-  for (uint16 i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT); i++) {
-    onesCount += frameBuffer[i];
-  }
-  printw("count: %d\n", onesCount);
-  wrefresh(window);
-}
-
 void drawFrameBuffer(WINDOW * window, uint8 *frameBuffer) {
   for (uint8 y = 0; y < DISPLAY_HEIGHT; y++) {
     for (uint8 x = 0; x < DISPLAY_WIDTH; x++) {
@@ -137,23 +114,6 @@ void destroyIO(WINDOW *window, struct HashTable *keyTable) {
   endwin();
 }
 
-void putHashTable(struct HashTable *keyTable) {
-  struct HashEntry *queue[KEYBOARD_SIZE];
-  uint8 counter = 0;
-
-  struct HashEntry *temp;
-  for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-    temp = keyTable->entries[i];
-    while (temp != NULL) {
-      queue[counter] = temp;
-      counter++;
-      temp = temp->next;
-    }
-  }
-
-  while (counter > 0) {
-    struct HashEntry *node = queue[counter - 1];
-    printf("%x: %x\n", node->key, node->value);
-    counter--;
-  }
+uint8 hashKey(uint8 key) {
+  return key % KEYBOARD_SIZE;
 }

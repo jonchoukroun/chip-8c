@@ -26,17 +26,8 @@ void setKeyState(WINDOW *, uint8 *, struct HashTable *);
 
 uint8 getKeyValue(struct HashTable *, uint8);
 
-uint8 hashKey(uint8);
-
-uint8 validateKeyPress(uint8);
-
 void drawFrameBuffer(WINDOW *, uint8 *);
 
-void testFrameBuffer(WINDOW *, uint8 *);
-
 void destroyIO(WINDOW *, struct HashTable *);
-
-// debugging
-void putHashTable(struct HashTable *);
 
 #endif
