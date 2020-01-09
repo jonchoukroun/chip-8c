@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 #include "chip8_io.h"
 #include "cpu.h"
 
-// #define CLOCK_RATE 500
-// #define NS_CONVERSION 1000000000L
-
-#define MS_CLOCK_RATE 16667L
+#define CPU_RATE 500
+#define DELAY_RATE 60
+#define MS_CONVERSION 1000000L
+#
 
 // test programs
 #define PROGRAM_SIZE 50
@@ -39,7 +39,7 @@ uint16 cornerLetters[PROGRAM_SIZE] = {
 };
 
 uint16 timerLetters[PROGRAM_SIZE] = {
-  0x60b4,   // store delay length in V0
+  0x6005,   // store delay length in V0
   0x610a,   // store fontset A in V1
   0xf129,   // set register I to fontest value in V1
   0x620e,   // store value 0xe in V2
@@ -113,9 +113,17 @@ uint16 byteSpread[PROGRAM_SIZE] = {
 
 uint8 runCycle(struct CPU *);
 
+void decrementTimers(struct CPU *);
+
 uint8 loadProgram(struct CPU *);
 
 void decrementCounters(struct CPU *);
+
+// set counter
+// run cycle
+// get elapsed time
+// if less than expected clock duration, sleep difference
+// reset counter
 
 int main(int argc, char const *argv[])
 {
@@ -123,34 +131,48 @@ int main(int argc, char const *argv[])
   struct HashTable *keyTable = initializeInput();
   struct CPU *cpu = initialize(keyTable);
 
+  uint16 cpu_cycle_length = MS_CONVERSION / CPU_RATE;
+  uint16 delay_cycle_length = MS_CONVERSION / DELAY_RATE;
+
   uint8 status = loadProgram(cpu);
   if (status == 0) {
     printw("Could not load program. Press any key to exit.\n");
     sleep(1);
   }
 
+  clock_t cpu_counter = clock();
+  clock_t delay_counter = clock();
+  double elapsed_time;
+
   while (status) {
     setKeyState(window, cpu->keyState, keyTable);
 
-    status = runCycle(cpu);
-
-    if (status == 0) {
-      printw("Press any key to shut down...\n");
-      wrefresh(window);
-      getch();
-      break;
+    elapsed_time = ((double)(clock() - delay_counter) / CLOCKS_PER_SEC) * MS_CONVERSION;
+    if (elapsed_time >= delay_cycle_length) {
+      decrementCounters(cpu);
+      delay_counter = clock();
     }
 
-    if (cpu->drawFlag == 1) {
-      drawFrameBuffer(window, cpu->frameBuffer);
-      cpu->drawFlag = 0;
-    }
+    elapsed_time = ((double)(clock() - cpu_counter) / CLOCKS_PER_SEC) * MS_CONVERSION;
+    if (elapsed_time >= cpu_cycle_length) {
+      printw("tick: %f\n", elapsed_time);
+      status = runCycle(cpu);
+      if (status == 0) {
+        printw("Press any key to shut down...\n");
+        wrefresh(window);
+        getch();
+        break;
+      }
 
-    // const long clockRate = 1 / (NS_CONVERSION * CLOCK_RATE);
-    // struct timespec clockSpeed = {0};
-    // clockSpeed.tv_nsec = clockRate;
-    // nanosleep(&clockSpeed, NULL);
-    usleep(MS_CLOCK_RATE);
+      if (cpu->drawFlag == 1) {
+        drawFrameBuffer(window, cpu->frameBuffer);
+        cpu->drawFlag = 0;
+      }
+
+      cpu_counter = clock();
+    } else {
+      usleep(cpu_cycle_length - elapsed_time);
+    }
   }
 
   destroyIO(window, keyTable);
@@ -168,25 +190,24 @@ uint8 runCycle(struct CPU *cpu)
   uint8 status = executeOpcode(cpu, opcode);
   if (status == 0) { return 0; }
 
-  // debugger
-  // printw("execute %x\n", opcode);
-  // refresh();
+  return 1;
+}
 
+void decrementTimers(struct CPU *cpu) {
   if (cpu->delayTimer > 0) {
     --cpu->delayTimer;
   }
 
   if (cpu->soundTimer > 0) {
+    // emit sound
     --cpu->soundTimer;
   }
-
-  return 1;
 }
 
 uint8 loadProgram(struct CPU *cpu)
 {
   // Test instructions, start loading at RAM[0x200]
-  uint16 *program = keyDisplay;
+  uint16 *program = byteSpread;
   for (uint8 i = 0; i < PROGRAM_SIZE; i++) {
     uint16 idx = 0x200 + (i * 2);
     uint16 opcode = program[i];
