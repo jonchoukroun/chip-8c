@@ -1,11 +1,26 @@
-CC = clang
-CFLAGS = -Wall
-LDFLAGS = -lncurses
-DEPS = chip8_io.h cpu.h fontset.h
-OBJ = dist/chip8_io.o dist/main.o dist/cpu.o
+INCDIR = include
+LDIR = lib
+OBJDIR = dist
 
-dist/%.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $<
+CC = clang
+WARNINGS = -Wall -Wextra -pedantic
+CFLAGS = $(WARNINGS) -I$(INCDIR)
+
+LIBS = -lSDL2
+
+_DEPS = types.h constants.h input.h cpu.h output.h
+DEPS = $(patsubst %,$(INCDIR)/%,$(_DEPS))
+
+_OBJ = input.o output.o cpu.o main.o
+OBJ = $(patsubst %,$(OBJDIR)/%,$(_OBJ))
+
+$(OBJDIR)/%.o: src/%.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 chip8: $(OBJ)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	rm -rf $(OBJDIR)/*
