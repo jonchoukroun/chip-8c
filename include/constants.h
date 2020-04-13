@@ -3,10 +3,20 @@
 #define SCALE 20
 #define PIXEL_WIDTH 8
 
+// Audio
+#define SAMPLE_RATE 48000
+#define SAMPLE_LENGTH 3             // seconds
+#define AUDIO_BUFFER_SIZE 2048;     // number of samples
+#define OUTPUT_CHANNELS 1           // mono
+#define FREQUENCY 150               // between D3 & D3#
+#define AMPLITUDE 8000
+
 // Clock speed
-#define CPU_RATE 500
-#define DELAY_RATE 60
-#define MS_CONVERSION 1000000L
+#define CPU_RATE 500                // Hz
+#define DELAY_RATE 60               // Hz
+#define MS_CONVERSION 1000
+#define MCS_CONVERSION 1000000
+#define MCS_CLOCK_RATE 2000
 
 // CPU
 #define RAM_SIZE 4096
@@ -17,4 +27,3 @@
 #define DISPLAY_WIDTH 64
 #define STACK_SIZE 8
 #define FONTSET_SIZE 80
-

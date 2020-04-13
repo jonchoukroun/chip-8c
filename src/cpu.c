@@ -345,3 +345,37 @@ uint8 generate_random_number()
 void destroy_cpu(CPU *cpu) {
     free(cpu);
 }
+
+// Cycle management
+Cycle *create_cycle(uint8 type)
+{
+    Cycle *cycle = malloc(sizeof(Cycle));
+    if (type == CLOCK_CYCLE) {
+        cycle->chunk = MCS_CONVERSION / CPU_RATE;
+    } else {
+        cycle->chunk = MCS_CONVERSION / DELAY_RATE;
+    }
+    cycle->type = type;
+    cycle->start = clock();
+    cycle->elapsed = 0;
+
+    return cycle;
+}
+
+void update_cycle(Cycle *cycle)
+{
+    clock_t now = clock();
+    double elapsed_time = ((double)(now - cycle->start) / CLOCKS_PER_SEC) * MCS_CONVERSION;
+    cycle->elapsed = elapsed_time;
+}
+
+void delay(Cycle *cycle) {
+    usleep(MCS_CLOCK_RATE - cycle->elapsed);
+    reset_cycle(cycle);
+}
+
+void reset_cycle(Cycle *cycle)
+{
+    cycle->start = clock();
+    cycle->elapsed = 0;
+}

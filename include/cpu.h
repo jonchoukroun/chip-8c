@@ -2,6 +2,8 @@
 #define CHIP_8
 
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 #include "input.h"
 #include "output.h"
 
@@ -34,6 +36,27 @@ uint16 fetch_opcode(CPU *);
 uint8 execute_opcode(CPU *, uint16);
 
 void destroy_cpu(CPU *);
+
+// Cycle management
+enum CycleType {
+    CLOCK_CYCLE,
+    TIMER_CYCLE
+};
+
+typedef struct Cycle {
+    uint8 type;
+    uint16 chunk;
+    clock_t start;
+    double elapsed;
+} Cycle;
+
+Cycle * create_cycle(uint8);
+
+void update_cycle(Cycle *);
+
+void delay(Cycle *);
+
+void reset_cycle(Cycle *);
 
 #endif
 

@@ -8,8 +8,7 @@
 uint8 load_program(CPU *);
 uint8 handle_input(CPU *, uint8);
 uint8 run_cycle(CPU *);
-// void decrementTimers(CPU *);
-// void decrementCounters(CPU *);
+void decrement_timers(CPU *);
 
 int main(/* int argc, char const *argv[] */)
 {
@@ -19,11 +18,21 @@ int main(/* int argc, char const *argv[] */)
     SDL_Renderer *renderer = NULL;
     initialize_display(&window, &renderer);
 
+    SDL_AudioDeviceID audio_device = initialize_audio();
+    if (audio_device == 0) {
+        return -1;
+    }
+
     load_program(cpu);
 
-    // while game is running
+    // // while game is running
     uint8 running = 1;
     SDL_Event e;
+
+    // TODO: set timer start
+    Cycle *clock_cycle = create_cycle(CLOCK_CYCLE);
+    Cycle *timer_cycle = create_cycle(TIMER_CYCLE);
+
     while (running == 1) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = 0;
@@ -44,14 +53,26 @@ int main(/* int argc, char const *argv[] */)
             cpu->draw_flag = 0;
         }
 
-        // TODO: update timers
+        if (cpu->sound_timer > 0) {
+            emit_audio(audio_device);
+        } else {
+            silence_audio(audio_device);
+        }
 
-        // TODO: sleep to match elapsed time with game rate
+        update_cycle(clock_cycle);
+        if (clock_cycle->chunk > clock_cycle->elapsed) {
+            delay(clock_cycle);
+        }
+
+        update_cycle(timer_cycle);
+        if (timer_cycle->chunk < timer_cycle->elapsed) {
+            decrement_timers(cpu);
+            reset_cycle(timer_cycle);
+        }
     }
 
-    // clean SDL
+    destroy_audio_device(audio_device);
     destroy_display(&window, &renderer);
-    // clean CPU
     destroy_cpu(cpu);
 
     return 0;
@@ -84,7 +105,7 @@ uint8 run_cycle(CPU *cpu)
 uint8 load_program(struct CPU *cpu)
 {
     // Test instructions, start loading at RAM[0x200]
-    const uint16 *program = draw_keypress;
+    const uint16 *program = buzzer;
     for (uint8 i = 0; i < PROGRAM_SIZE; i++) {
         uint16 idx = 0x200 + (i * 2);
         uint16 opcode = program[i];
@@ -95,13 +116,9 @@ uint8 load_program(struct CPU *cpu)
     return 1;
 }
 
-// void decrementCounters(struct CPU *cpu)
-// {
-//     if (cpu->delayTimer > 0) {
-//         --cpu->delayTimer;
-//     }
+void decrement_timers(CPU *cpu)
+{
+    if (cpu->delay_timer > 0) cpu->delay_timer--;
 
-//     if (cpu->soundTimer > 0) {
-//         --cpu->soundTimer;
-//     }
-// }
+    if (cpu->sound_timer > 0) cpu->sound_timer--;
+}
