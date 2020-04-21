@@ -1,11 +1,12 @@
 #include <SDL2/SDL.h>
+#include <string.h>
 
 #include "input.h"
 #include "output.h"
 #include "cpu.h"
 #include "test_programs.h"
 
-uint8 load_program(CPU *);
+uint8 load_program(CPU *, char *);
 uint8 handle_input(CPU *, uint8);
 uint8 run_cycle(CPU *);
 void decrement_timers(CPU *);
@@ -35,9 +36,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    load_program(cpu);
+    if (strcmp(argv[1], "-t") == 0) {
+        load_test_program(cpu);
+    } else {
+        if (load_program(cpu, argv[1]) == 0) {
+            return -1;
+        }
+    }
 
-    // // while game is running
+    // while game is running
     uint8 running = 1;
     SDL_Event e;
 
@@ -73,6 +80,7 @@ int main(int argc, char *argv[])
 
         update_cycle(clock_cycle);
         if (clock_cycle->chunk > clock_cycle->elapsed) {
+            printf("Will delay\n");
             delay(clock_cycle);
         }
 
@@ -114,16 +122,23 @@ uint8 run_cycle(CPU *cpu)
     return 1;
 }
 
-uint8 load_program(struct CPU *cpu)
+uint8 load_program(CPU *cpu, char *filename)
 {
-    // Test instructions, start loading at RAM[0x200]
-    const uint16 *program = buzzer;
-    for (uint8 i = 0; i < PROGRAM_SIZE; i++) {
-        uint16 idx = 0x200 + (i * 2);
-        uint16 opcode = program[i];
-        cpu->RAM[idx] = (opcode & 0xff00) >> 8;
-        cpu->RAM[idx + 1] = opcode & 0x00ff;
+    FILE *program;
+    program = fopen(filename, "rb");
+    if (!program) {
+        printf("Failed to open ROM %s\n", filename);
+        return 0;
     }
+
+    int byte;
+    int i = 0x200;
+    while ((byte = getc(program)) != EOF) {
+        cpu->RAM[i] = byte;
+        // printf("stored: %x %x\n", i, cpu->RAM[i]);
+        i++;
+    }
+    fclose(program);
 
     return 1;
 }
