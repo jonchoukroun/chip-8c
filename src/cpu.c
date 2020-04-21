@@ -103,7 +103,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
         case 0x2:
             cpu->stack_pointer++;
             cpu->stack[cpu->stack_pointer] = cpu->program_counter;
-            cpu->program_counter = 0xfff;
+            cpu->program_counter = opcode & 0x0fff;
             break;
 
         case 0x3:
