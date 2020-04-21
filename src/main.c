@@ -10,9 +10,21 @@ uint8 handle_input(CPU *, uint8);
 uint8 run_cycle(CPU *);
 void decrement_timers(CPU *);
 
-int main(/* int argc, char const *argv[] */)
+// debugging
+void load_test_program(CPU *);
+void draw_fb(CPU *);
+void check_state(CPU *);
+
+int main(int argc, char *argv[])
 {
+    if (argc < 2) {
+        printf("To play a game run:\n\t$> ./chip8 roms/gamefile.c8\n");
+        printf("Or, run a test program:\n\t$>./chip8 -t\n");
+        return -1;
+    }
+
     CPU *cpu = initialize_cpu();
+    // check_state(cpu);
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -121,4 +133,60 @@ void decrement_timers(CPU *cpu)
     if (cpu->delay_timer > 0) cpu->delay_timer--;
 
     if (cpu->sound_timer > 0) cpu->sound_timer--;
+}
+
+/**
+ * Debugging
+ **/
+void load_test_program(CPU *cpu)
+{
+    const uint16 *program = draw_sprites;
+    uint8 size = program[0];
+    for (uint8 i = 1; i <= size; i++) {
+        uint16 opcode = program[i];
+        uint16 idx = 0x200 + ((i - 1) * 2);
+        cpu->RAM[idx] = (opcode & 0xff00) >> 8;
+        cpu->RAM[idx + 1] = opcode & 0x00ff;
+    }
+}
+
+void draw_fb(CPU *cpu) {
+    for (uint16 row = 0; row < DISPLAY_HEIGHT; row++) {
+        for (uint16 col = 0; col < DISPLAY_WIDTH; col++) {
+            uint8 pixel = 32;
+            if (cpu->frame_buffer[col + (row * DISPLAY_WIDTH)] == 1) {
+                pixel = 35;
+            }
+            printf("%c", pixel);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+void check_state(CPU *cpu)
+{
+    for (int i = 0; i < REGISTER_COUNT; i++) {
+        printf("V[%d] = %x\n", i, cpu->V[i]);
+    }
+    printf("V[%x] = %x\n", CARRY_FLAG_ADDRESS, cpu->V[CARRY_FLAG_ADDRESS]);
+
+    printf("I = %x\n", cpu->I);
+    printf("DT = %x\n", cpu->delay_timer);
+    printf("ST = %x\n", cpu->sound_timer);
+
+    printf("SP = %x\n", cpu->stack_pointer);
+    for (int i = 0; i < STACK_SIZE; i++) {
+        printf("Stack[%d] = %x\n", i, cpu->stack[i]);
+    }
+
+    int count = 0;
+    for (int i = 0; i < (DISPLAY_SIZE); i++) {
+        if (cpu->frame_buffer[i] == 1) {
+            printf("on @ %x\n", i);
+            count++;
+        }
+    }
+    printf("pixels on = %d\n", count);
+
 }
