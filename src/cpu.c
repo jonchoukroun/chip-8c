@@ -27,14 +27,41 @@ uint8 generate_random_number();
 CPU * initialize_cpu()
 {
     CPU *cpu = calloc(1, sizeof(CPU));
+
+    for (uint8 i = 0; i < REGISTER_COUNT; i++) {
+        cpu->V[i] = 0;
+    }
+
+    cpu->I = 0;
+
+    for (uint8 i = 0; i < STACK_SIZE; i++) {
+        cpu->stack[i] = 0;
+    }
+    cpu->stack_pointer = 0;
+
+    cpu->delay_timer = 0;
+    cpu->sound_timer = 0;
+
+    clear_frame_buffer(cpu);
+    cpu->draw_flag = 0;
+
     cpu->program_counter = 0x200;
     cpu->stack_pointer = 0x0;
 
-    for (uint8 i = 0; i < FONTSET_SIZE; ++i) {
+    for (uint16 i = 0; i < RAM_SIZE; ++i) {
+        if (i < FONTSET_SIZE) {
             cpu->RAM[i] = font_set[i];
+        } else {
+            cpu->RAM[i] = 0;
+        }
     }
 
-    cpu->key_table = create_hashtable();
+    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+        cpu->key_state[i] = 0;
+    }
+
+    // Use EXTENDED or STANDARD keyboard layouts
+    cpu->key_table = create_hashtable(EXTENDED);
 
     return cpu;
 }

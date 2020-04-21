@@ -5,7 +5,7 @@
 void initialize_hashtable(HashTable *);
 uint8 hash_key(uint8);
 
-const uint8 SDL_KEYBOARD[KEYBOARD_SIZE] = {
+const uint8 SDL_KEYBOARD_EXTENDED[KEYBOARD_SIZE] = {
     SDL_SCANCODE_KP_2,
     SDL_SCANCODE_NUMLOCKCLEAR,
     SDL_SCANCODE_KP_EQUALS,
@@ -24,19 +24,45 @@ const uint8 SDL_KEYBOARD[KEYBOARD_SIZE] = {
     SDL_SCANCODE_KP_ENTER
 };
 
-HashTable * create_hashtable()
+const uint8 SDL_KEYBOARD_STANDARD[KEYBOARD_SIZE] = {
+    SDL_SCANCODE_COMMA,
+    SDL_SCANCODE_7,
+    SDL_SCANCODE_8,
+    SDL_SCANCODE_9,
+    SDL_SCANCODE_U,
+    SDL_SCANCODE_I,
+    SDL_SCANCODE_O,
+    SDL_SCANCODE_J,
+    SDL_SCANCODE_K,
+    SDL_SCANCODE_L,
+    SDL_SCANCODE_M,
+    SDL_SCANCODE_PERIOD,
+    SDL_SCANCODE_0,
+    SDL_SCANCODE_P,
+    SDL_SCANCODE_SEMICOLON,
+    SDL_SCANCODE_SLASH,
+};
+
+HashTable * create_hashtable(KEYBOARD_TYPE type)
 {
     HashTable *table = malloc(sizeof(HashTable));
     initialize_hashtable(table);
 
     uint8 max_index = 0;
     for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+        uint8 key;
+        if (type == STANDARD) {
+            key = SDL_KEYBOARD_STANDARD[i];
+        } else {
+            key = SDL_KEYBOARD_EXTENDED[i];
+        }
+
         HashEntry *entry;
         entry = malloc(sizeof(HashEntry));
-        entry->key = SDL_KEYBOARD[i];
+        entry->key = key;
         entry->value = i;
 
-        uint8 idx = hash_key(SDL_KEYBOARD[i]);
+        uint8 idx = hash_key(key);
         max_index = idx > max_index ? idx : max_index;
 
         HashEntry *temp = table->entries[idx];

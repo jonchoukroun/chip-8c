@@ -5,6 +5,11 @@
 #include "types.h"
 #include "constants.h"
 
+typedef enum {
+    STANDARD,
+    EXTENDED
+} KEYBOARD_TYPE;
+
 typedef struct HashEntry {
     uint8 key;
     uint8 value;
