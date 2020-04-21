@@ -46,7 +46,6 @@ CPU * initialize_cpu()
     cpu->draw_flag = 0;
 
     cpu->program_counter = 0x200;
-    cpu->stack_pointer = 0x0;
 
     for (uint16 i = 0; i < RAM_SIZE; ++i) {
         if (i < FONTSET_SIZE) {
@@ -73,7 +72,7 @@ uint16 fetch_opcode(CPU *cpu)
 
 uint8 execute_opcode(CPU *cpu, uint16 opcode)
 {
-    printf("will execute %x\n", opcode);
+    // printf("will execute %x\n", opcode);
 
     switch ((opcode & 0xf000) >> 12) {
         case 0x0:
@@ -121,7 +120,9 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0x5:
-            if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4]) cpu->program_counter += 2;
+            if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4])
+                cpu->program_counter += 2;
+
             cpu->program_counter += 2;
             break;
 
@@ -131,7 +132,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0x7:
-            cpu->V[(opcode & 0x0f00) >> 8] += opcode & 0x00ff;
+            cpu->V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
             cpu->program_counter += 2;
             break;
 
@@ -154,8 +155,13 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     break;
 
                 case 0x4:
-                    if (cpu->V[(opcode & 0x0f00) >> 8] + cpu->V[(opcode & 0x00f0) >> 4] > 0xff) cpu->V[CARRY_FLAG_ADDRESS] = 1;
-                    cpu->V[(opcode & 0x0f00) >> 8] += cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[(opcode & 0x0f00) >> 8] += cpu->V[(opcode & 0x00f0) >>4];
+                    if (cpu->V[(opcode & 0x0f00) >> 8] > 0xff) {
+                        cpu->V[CARRY_FLAG_ADDRESS] = 1;
+                    } else {
+                        cpu->V[CARRY_FLAG_ADDRESS] = 0;
+                    }
+
                     break;
 
                 case 0x5:
@@ -199,7 +205,9 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 return 0;
             }
 
-            if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4]) cpu->program_counter += 2;
+            if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4])
+                cpu->program_counter += 2;
+
             cpu->program_counter += 2;
             break;
 
@@ -209,7 +217,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0xb:
-            cpu->program_counter = cpu->V[0x0] + opcode & 0x0fff;
+            cpu->program_counter = cpu->V[0x0] + (opcode & 0x0fff);
             break;
 
         case 0xc: {
@@ -232,7 +240,8 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 
                     if (pixel & (0x80 >> col)) {
                         uint16 frame = x_pos + (y_pos * DISPLAY_WIDTH);
-                        if (cpu->frame_buffer[frame]) cpu->V[CARRY_FLAG_ADDRESS] = 1;
+                        if (cpu->frame_buffer[frame])
+                            cpu->V[CARRY_FLAG_ADDRESS] = 1;
 
                         cpu->frame_buffer[frame] ^= 1;
                     }
@@ -246,11 +255,13 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
         case 0xe:
             switch (opcode & 0x00ff) {
                 case 0x9e:
-                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] != 0) cpu->program_counter += 2;
+                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] != 0)
+                        cpu->program_counter += 2;
                     break;
 
                 case 0xa1:
-                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] == 0) cpu->program_counter += 2;
+                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] == 0)
+                        cpu->program_counter += 2;
                     break;
 
                 default:
@@ -308,7 +319,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         cpu->RAM[cpu->I] = decimal / sig;
                         decimal %= sig;
                         sig /= 10;
-                        cpu->I += 1;
+                        cpu->I++;
                     }
                     break;
                 }
@@ -361,16 +372,11 @@ uint8 generate_random_number()
         if (result < 0) {
             printf("Cannot read random data\n");
         } else {
-            printf("Random #: %d\n", random_data[0]);
             return random_data[0];
         }
     }
 
     return -1;
-}
-
-void destroy_cpu(CPU *cpu) {
-    free(cpu);
 }
 
 // Cycle management
@@ -405,4 +411,8 @@ void reset_cycle(Cycle *cycle)
 {
     cycle->start = clock();
     cycle->elapsed = 0;
+}
+
+void destroy_cpu(CPU *cpu) {
+    free(cpu);
 }
