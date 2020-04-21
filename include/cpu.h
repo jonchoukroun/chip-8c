@@ -11,7 +11,7 @@ typedef struct CPU {
     uint8 V[REGISTER_COUNT];
     uint16 I;
 
-    uint8 stack[STACK_SIZE];
+    uint16 stack[STACK_SIZE];
     uint8 stack_pointer;
 
     uint8 delay_timer;
