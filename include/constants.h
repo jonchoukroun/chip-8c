@@ -1,6 +1,9 @@
 // Display
 #define DISPLAY_TITLE "Chip-8 Emulator by Jon Choukroun"
-#define SCALE 20
+#define DISPLAY_HEIGHT 32
+#define DISPLAY_WIDTH 64
+#define DISPLAY_SIZE DISPLAY_HEIGHT * DISPLAY_WIDTH
+#define SCALE 15
 #define PIXEL_WIDTH 8
 
 // Audio
@@ -23,7 +26,5 @@
 #define REGISTER_COUNT 16
 #define CARRY_FLAG_ADDRESS 0xF
 #define KEYBOARD_SIZE 16
-#define DISPLAY_HEIGHT 32
-#define DISPLAY_WIDTH 64
 #define STACK_SIZE 8
 #define FONTSET_SIZE 80

@@ -17,7 +17,7 @@ typedef struct CPU {
     uint8 delay_timer;
     uint8 sound_timer;
 
-    uint8 frame_buffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
+    uint8 frame_buffer[DISPLAY_SIZE];
     uint8 draw_flag;
 
     uint16 program_counter;

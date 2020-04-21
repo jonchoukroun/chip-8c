@@ -317,7 +317,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 
 void clear_frame_buffer(CPU *cpu)
 {
-    for (uint16 i = 0; i < (DISPLAY_WIDTH * DISPLAY_HEIGHT); ++i) {
+    for (uint16 i = 0; i < (DISPLAY_SIZE); ++i) {
         cpu->frame_buffer[i] = 0;
     }
 }
