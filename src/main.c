@@ -67,11 +67,6 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (cpu->draw_flag == 1) {
-            update_display(&renderer, cpu->frame_buffer);
-            cpu->draw_flag = 0;
-        }
-
         if (cpu->sound_timer > 0) {
             emit_audio(audio_device);
         } else {
@@ -86,6 +81,12 @@ int main(int argc, char *argv[])
 
         update_cycle(timer_cycle);
         if (timer_cycle->chunk < timer_cycle->elapsed) {
+            if (cpu->draw_flag == 1) {
+                // draw_fb(cpu);
+                update_display(&renderer, cpu->frame_buffer);
+                cpu->draw_flag = 0;
+            }
+
             decrement_timers(cpu);
             reset_cycle(timer_cycle);
         }
@@ -115,7 +116,7 @@ uint8 run_cycle(CPU *cpu)
     uint16 opcode = fetch_opcode(cpu);
     if (execute_opcode(cpu, opcode) != 1) {
         // Allow to fail silently?
-        printf("Failed to execute opcode. Exiting...\n");
+        printf("Failed to execute opcode %x. Exiting...\n", opcode);
         return 0;
     }
 
