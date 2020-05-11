@@ -279,19 +279,23 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 
                 case 0x0a: {
                     SDL_Event event;
-                    while (event.type != SDL_KEYDOWN) {
+                    uint8 waiting = 1;
+                    while(waiting) {
                         SDL_WaitEvent(&event);
+                        if (event.type == SDL_KEYDOWN) {
+                            uint8 key = event.key.keysym.scancode;
+                            // Handle quit
+                            if (key == SDL_SCANCODE_Q) return 0;
+
+                            uint8 key_value = get_key_value(cpu->key_table, key);
+                            if (key_value != 0xff) {
+                                cpu->V[(opcode & 0x0f00) >> 8] = key_value;
+                                waiting = 0;
+                            } else {
+                                printf("Invalid keypress %x\n", key);
+                            }
+                        }
                     }
-
-                    uint8 key = event.key.keysym.scancode;
-                    // Handle quit
-                    if (key == SDL_SCANCODE_Q) return 0;
-
-                    uint8 key_value = get_key_value(cpu->key_table, key);
-                    // Ignore out-of-bound key presses
-                    if (key_value == 0xff) break;
-
-                    cpu->V[(opcode & 0x0f00) >> 8] = key_value;
                     break;
                 }
 
