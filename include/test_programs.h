@@ -29,17 +29,15 @@ const uint16 add_and_show[] = {
 };
 
 const uint16 draw_sprites[] = {
-    10,
+    8,
     0x00E0,     // clear screen
-    0x600a,     // set V0 = 10
-    0xF018,     // set sound timer to V0 (10 => 500 ms)
     0xF00A,     // await key press, store in V0
     0x00E0,     // clear screen before drawing new sprite
     0xF029,     // set I to sprite in V0
     0x601E,     // set V0 to 0x1e
     0x610D,     // set V1 to 0x0d
     0xD015,     // draw sprite at I at x, y
-    0x1202      // jump key press await
+    0x1202      // jump to keypress await
 };
 
 const uint16 countdown[] = {
