@@ -25,5 +25,7 @@ HashTable * create_hashtable();
 
 uint8 get_key_value(HashTable *, uint8);
 
+void destroy_hashtable(HashTable *);
+
 #endif
 

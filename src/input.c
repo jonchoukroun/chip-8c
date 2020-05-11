@@ -83,9 +83,7 @@ HashTable * create_hashtable(KEYBOARD_TYPE type)
 uint8 get_key_value(HashTable *key_table, uint8 key) {
     uint8 idx = hash_key(key);
 
-    HashEntry *temp = calloc(1, sizeof(HashEntry));
-
-    temp = key_table->entries[idx];
+    HashEntry *temp = key_table->entries[idx];
 
     while (temp != NULL) {
         if (temp->key == key) {
@@ -114,4 +112,20 @@ void initialize_hashtable(HashTable *table)
 uint8 hash_key(uint8 key)
 {
     return key % KEYBOARD_SIZE;
+}
+
+void destroy_hashentry(HashEntry *node)
+{
+    if (node == NULL) return;
+    if (node->next != NULL) destroy_hashentry(node->next);
+
+    free(node);
+}
+
+void destroy_hashtable(HashTable *table)
+{
+    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+        destroy_hashentry(table->entries[i]);
+    }
+    free(table);
 }

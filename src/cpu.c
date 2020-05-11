@@ -417,6 +417,12 @@ void reset_cycle(Cycle *cycle)
     cycle->elapsed = 0;
 }
 
+void destroy_cycle(Cycle *cycle)
+{
+    free(cycle);
+}
+
 void destroy_cpu(CPU *cpu) {
+    destroy_hashtable(cpu->key_table);
     free(cpu);
 }

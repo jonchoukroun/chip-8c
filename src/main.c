@@ -94,6 +94,8 @@ int main(int argc, char *argv[])
 
     destroy_audio_device(audio_device);
     destroy_display(&window, &renderer);
+    destroy_cycle(clock_cycle);
+    destroy_cycle(timer_cycle);
     destroy_cpu(cpu);
 
     return 0;

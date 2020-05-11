@@ -58,5 +58,7 @@ void delay(Cycle *);
 
 void reset_cycle(Cycle *);
 
+void destroy_cycle(Cycle *);
+
 #endif
 
