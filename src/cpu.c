@@ -255,7 +255,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
         case 0xe:
             switch (opcode & 0x00ff) {
                 case 0x9e:
-                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] != 0)
+                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] == 1)
                         cpu->program_counter += 2;
                     break;
 
