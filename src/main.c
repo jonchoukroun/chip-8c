@@ -4,17 +4,21 @@
 #include "input.h"
 #include "output.h"
 #include "cpu.h"
+#include "cycles.h"
 #include "test_programs.h"
 
+uint8 handle_input(CPU *, SDL_Event);
 uint8 load_program(CPU *, char *);
-uint8 handle_input(CPU *, uint8);
 uint8 run_cycle(CPU *);
 void decrement_timers(CPU *);
 
-// debugging
+/**
+ * Debugging
+ **/
 void load_test_program(CPU *);
 void draw_fb(CPU *);
 void check_state(CPU *);
+void draw_keys(CPU *);
 
 int main(int argc, char *argv[])
 {
@@ -46,19 +50,17 @@ int main(int argc, char *argv[])
 
     // while game is running
     uint8 running = 1;
-    SDL_Event e;
+    SDL_Event event;
 
-    // TODO: set timer start
     Cycle *clock_cycle = create_cycle(CLOCK_CYCLE);
-    Cycle *timer_cycle = create_cycle(TIMER_CYCLE);
+    Cycle *frames_cycle = create_cycle(TIMER_CYCLE);
 
     while (running == 1) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) running = 0;
+        reset_cycle(clock_cycle);
+        reset_cycle(frames_cycle);
 
-            if (e.type == SDL_KEYDOWN) {
-                running = handle_input(cpu, e.key.keysym.scancode);
-            }
+        while (SDL_PollEvent(&event)) {
+            running = handle_input(cpu, event);
         }
 
         // CPU cycle
@@ -67,48 +69,58 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if (cpu->sound_timer > 0) {
-            emit_audio(audio_device);
-        } else {
-            silence_audio(audio_device);
-        }
-
         update_cycle(clock_cycle);
-        if (clock_cycle->chunk > clock_cycle->elapsed) {
-            printf("Will delay\n");
+        if (clock_cycle->elapsed < clock_cycle->chunk) {
             delay(clock_cycle);
         }
 
-        update_cycle(timer_cycle);
-        if (timer_cycle->chunk < timer_cycle->elapsed) {
+        update_cycle(frames_cycle);
+        if (frames_cycle->chunk >= frames_cycle->elapsed) {
             if (cpu->draw_flag == 1) {
                 // draw_fb(cpu);
                 update_display(&renderer, cpu->frame_buffer);
                 cpu->draw_flag = 0;
             }
 
+            if (cpu->sound_timer > 0) {
+                emit_audio(audio_device);
+            } else {
+                silence_audio(audio_device);
+            }
+
             decrement_timers(cpu);
-            reset_cycle(timer_cycle);
+            reset_cycle(frames_cycle);
         }
+        // draw_keys(cpu);
     }
 
     destroy_audio_device(audio_device);
     destroy_display(&window, &renderer);
     destroy_cycle(clock_cycle);
-    destroy_cycle(timer_cycle);
+    destroy_cycle(frames_cycle);
     destroy_cpu(cpu);
 
     return 0;
 }
 
-uint8 handle_input(CPU *cpu, uint8 key)
+uint8 handle_input(CPU *cpu, SDL_Event event)
 {
+    if (event.type == SDL_QUIT) return 0;
+
+    // Ignore non key presses
+    if (event.type != SDL_KEYDOWN && event.type != SDL_KEYUP) return 1;
+
+    uint8 key = event.key.keysym.scancode;
     if (key == SDL_SCANCODE_Q) return 0;
 
-    uint8 key_value = get_key_value(cpu->key_table, key);
-    if (key_value == 0xff) printf("Invalid key pressed: %x (%x)\n", key, key_value);
+    uint8 value = get_key_value(cpu->key_table, key);
+    // Warn but don't fail
+    if (value == 0xff) {
+        printf("Invalid keypress %x\n", value);
+        return 1;
+    }
 
-    cpu->key_state[key_value] = 1;
+    cpu->key_state[value] = event.type == SDL_KEYDOWN ? 1 : 0;
 
     return 1;
 }
@@ -207,4 +219,16 @@ void check_state(CPU *cpu)
     }
     printf("pixels on = %d\n", count);
 
+}
+
+void draw_keys(CPU *cpu)
+{
+    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+        if (cpu->key_state[i] == 1) {
+            printf("%x\t", i);
+        } else {
+            printf("_\t");
+        }
+    }
+    printf("\n");
 }
