@@ -364,62 +364,12 @@ void clear_frame_buffer(CPU *cpu)
     }
 }
 
+/**
+ * Uses preferred arc4random to generate a random number
+ **/
 uint8 generate_random_number()
 {
-    FILE *random_file = fopen("/dev/urandom", "r");
-    if (random_file == NULL) {
-        printf("Failed to open /dev/urandom\n");
-        return -1;
-    } else {
-        uint8 random_data[2];
-        ssize_t result = fread(random_data, sizeof(uint8), (sizeof(random_data) / sizeof(uint8)), random_file);
-        if (result < 0) {
-            printf("Cannot read random data\n");
-        } else {
-            return random_data[0];
-        }
-    }
-
-    return -1;
-}
-
-// Cycle management
-Cycle *create_cycle(uint8 type)
-{
-    Cycle *cycle = malloc(sizeof(Cycle));
-    if (type == CLOCK_CYCLE) {
-        cycle->chunk = MCS_CONVERSION / CPU_RATE;
-    } else {
-        cycle->chunk = MCS_CONVERSION / DELAY_RATE;
-    }
-    cycle->type = type;
-    cycle->start = clock();
-    cycle->elapsed = 0;
-
-    return cycle;
-}
-
-void update_cycle(Cycle *cycle)
-{
-    clock_t now = clock();
-    double elapsed_time = ((double)(now - cycle->start) / CLOCKS_PER_SEC) * MCS_CONVERSION;
-    cycle->elapsed = elapsed_time;
-}
-
-void delay(Cycle *cycle) {
-    usleep(MCS_CLOCK_RATE - cycle->elapsed);
-    reset_cycle(cycle);
-}
-
-void reset_cycle(Cycle *cycle)
-{
-    cycle->start = clock();
-    cycle->elapsed = 0;
-}
-
-void destroy_cycle(Cycle *cycle)
-{
-    free(cycle);
+    return (uint8)arc4random_uniform(RAND_UPPER_BOUND);
 }
 
 void destroy_cpu(CPU *cpu) {
