@@ -74,13 +74,13 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 {
     // printf("will execute %x\n", opcode);
 
+    cpu->program_counter += 2;
     switch ((opcode & 0xf000) >> 12) {
         case 0x0:
             switch(opcode & 0xff) {
                 case 0xe0:
                     clear_frame_buffer(cpu);
                     cpu->draw_flag = 1;
-                    cpu->program_counter += 2;
                     break;
 
                 case 0xee:
@@ -90,7 +90,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 
                 default:
                     printf("Matched unused opcode: %x\n", opcode);
-                    cpu->program_counter += 2;
                     return 0;
             }
             break;
@@ -109,31 +108,26 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             if ((cpu->V[(opcode & 0x0f00) >> 8]) == (opcode & 0x00ff))
                 cpu->program_counter += 2;
 
-            cpu->program_counter += 2;
             break;
 
         case 0x4:
             if ((cpu->V[(opcode & 0x0f00) >> 8]) != (opcode & 0x00ff))
                 cpu->program_counter += 2;
 
-            cpu->program_counter += 2;
             break;
 
         case 0x5:
             if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4])
                 cpu->program_counter += 2;
 
-            cpu->program_counter += 2;
             break;
 
         case 0x6:
             cpu->V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
-            cpu->program_counter += 2;
             break;
 
         case 0x7:
             cpu->V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
-            cpu->program_counter += 2;
             break;
 
         case 0x8:
@@ -196,7 +190,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            cpu->program_counter += 2;
             break;
 
         case 0x9:
@@ -208,12 +201,10 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4])
                 cpu->program_counter += 2;
 
-            cpu->program_counter += 2;
             break;
 
         case 0xa:
             cpu->I = opcode & 0x0fff;
-            cpu->program_counter += 2;
             break;
 
         case 0xb:
@@ -223,7 +214,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
         case 0xc: {
             uint8 num = generate_random_number();
             cpu->V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
-            cpu->program_counter += 2;
             break;
         }
 
@@ -248,7 +238,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 }
             }
             cpu->draw_flag = 1;
-            cpu->program_counter += 2;
             break;
         }
 
@@ -268,7 +257,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            cpu->program_counter += 2;
             break;
 
         case 0xf:
@@ -346,7 +334,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            cpu->program_counter += 2;
             break;
 
         default:
