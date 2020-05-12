@@ -60,7 +60,7 @@ CPU * initialize_cpu()
     }
 
     // Use EXTENDED or STANDARD keyboard layouts
-    cpu->key_table = create_hashtable(EXTENDED);
+    cpu->key_table = create_hashtable(STANDARD);
 
     return cpu;
 }
