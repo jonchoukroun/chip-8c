@@ -24,7 +24,7 @@ uint8 font_set[FONTSET_SIZE] = {
 void clear_frame_buffer(CPU *);
 uint8 generate_random_number();
 
-CPU * initialize_cpu()
+CPU * initialize_cpu(KEYBOARD_TYPE keyboard)
 {
     CPU *cpu = calloc(1, sizeof(CPU));
 
@@ -59,8 +59,7 @@ CPU * initialize_cpu()
         cpu->key_state[i] = 0;
     }
 
-    // Use EXTENDED or STANDARD keyboard layouts
-    cpu->key_table = create_hashtable(STANDARD);
+    cpu->key_table = create_hashtable(keyboard);
 
     return cpu;
 }

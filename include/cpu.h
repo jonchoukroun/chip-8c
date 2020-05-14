@@ -27,7 +27,7 @@ typedef struct CPU {
     struct HashTable *key_table;
 } CPU;
 
-CPU * initialize_cpu();
+CPU * initialize_cpu(KEYBOARD_TYPE);
 
 uint16 fetch_opcode(CPU *);
 

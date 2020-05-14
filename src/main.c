@@ -28,7 +28,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    CPU *cpu = initialize_cpu();
+    KEYBOARD_TYPE t = EXTENDED;
+    CPU *cpu = initialize_cpu(t);
     // check_state(cpu);
 
     SDL_Window *window = NULL;
