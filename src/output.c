@@ -60,7 +60,7 @@ uint8 update_display(SDL_Renderer **renderer, uint8 *frame_buffer)
     SDL_SetRenderDrawColor(*renderer, BG_RED, BG_GREEN, BG_BlUE, BG_ALPHA);
     SDL_RenderClear(*renderer);
 
-    for (uint16 i = 0; i < (DISPLAY_SIZE); ++i) {
+    for (uint16 i = 0; i < DISPLAY_SIZE; i++) {
         if (frame_buffer[i]) {
             SDL_Rect pixel;
             pixel.x = (i % DISPLAY_WIDTH) * SCALE;

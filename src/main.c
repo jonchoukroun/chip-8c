@@ -19,6 +19,7 @@ void load_test_program(CPU *);
 void draw_fb(CPU *);
 void check_state(CPU *);
 void draw_keys(CPU *);
+void cpu_snapshot(uint16, CPU *);
 
 int main(int argc, char *argv[])
 {
@@ -28,13 +29,15 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    KEYBOARD_TYPE t = EXTENDED;
+    // STANDARD or EXTENDED
+    KEYBOARD_TYPE t = STANDARD;
     CPU *cpu = initialize_cpu(t);
     // check_state(cpu);
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
     initialize_display(&window, &renderer);
+    update_display(&renderer, cpu->frame_buffer);
 
     SDL_AudioDeviceID audio_device = initialize_audio();
     if (audio_device == 0) {
@@ -129,6 +132,7 @@ uint8 handle_input(CPU *cpu, SDL_Event event)
 uint8 run_cycle(CPU *cpu)
 {
     uint16 opcode = fetch_opcode(cpu);
+    cpu_snapshot(opcode, cpu);
     if (execute_opcode(cpu, opcode) != 1) {
         // Allow to fail silently?
         printf("Failed to execute opcode %x. Exiting...\n", opcode);
@@ -140,21 +144,37 @@ uint8 run_cycle(CPU *cpu)
 
 uint8 load_program(CPU *cpu, char *filename)
 {
-    FILE *program;
-    program = fopen(filename, "rb");
+    FILE *program = fopen(filename, "rb");
     if (!program) {
         printf("Failed to open ROM %s\n", filename);
         return 0;
     }
+    fseek(program, 0, SEEK_END);
+    long program_size = ftell(program);
+    rewind(program);
 
-    int byte;
-    int i = 0x200;
-    while ((byte = getc(program)) != EOF) {
-        cpu->RAM[i] = byte;
-        // printf("stored: %x %x\n", i, cpu->RAM[i]);
-        i++;
+    if (RAM_SIZE - PROGRAM_START < program_size) {
+        printf("ROM is too large too fit in memory\n");
+        return 0;
     }
+
+    char *program_buffer = (char *)malloc(sizeof(char) * program_size);
+    if (!program_buffer) {
+        printf("Failed to allocate program buffer\n");
+        return 0;
+    }
+    size_t read_result = fread(program_buffer, sizeof(char), (size_t)program_size, program);
+    if (read_result != (size_t)program_size) {
+        printf("Failed to read ROM\n");
+        return 0;
+    }
+
+    for (int i = 0; i < program_size; i++) {
+        cpu->RAM[i + PROGRAM_START] = (uint8)program_buffer[i];
+    }
+
     fclose(program);
+    free(program_buffer);
 
     return 1;
 }
@@ -175,7 +195,7 @@ void load_test_program(CPU *cpu)
     uint8 size = program[0];
     for (uint8 i = 1; i <= size; i++) {
         uint16 opcode = program[i];
-        uint16 idx = 0x200 + ((i - 1) * 2);
+        uint16 idx = PROGRAM_START + ((i - 1) * 2);
         cpu->RAM[idx] = (opcode & 0xff00) >> 8;
         cpu->RAM[idx + 1] = opcode & 0x00ff;
     }
@@ -187,6 +207,8 @@ void draw_fb(CPU *cpu) {
             uint8 pixel = 32;
             if (cpu->frame_buffer[col + (row * DISPLAY_WIDTH)] == 1) {
                 pixel = 35;
+            } else {
+                pixel = 46;
             }
             printf("%c", pixel);
         }
@@ -198,9 +220,8 @@ void draw_fb(CPU *cpu) {
 void check_state(CPU *cpu)
 {
     for (int i = 0; i < REGISTER_COUNT; i++) {
-        printf("V[%d] = %x\n", i, cpu->V[i]);
+        printf("V[%x] = %x\n", i, cpu->V[i]);
     }
-    printf("V[%x] = %x\n", CARRY_FLAG_ADDRESS, cpu->V[CARRY_FLAG_ADDRESS]);
 
     printf("I = %x\n", cpu->I);
     printf("DT = %x\n", cpu->delay_timer);
@@ -208,7 +229,7 @@ void check_state(CPU *cpu)
 
     printf("SP = %x\n", cpu->stack_pointer);
     for (int i = 0; i < STACK_SIZE; i++) {
-        printf("Stack[%d] = %x\n", i, cpu->stack[i]);
+        printf("Stack[%x] = %x\n", i, cpu->stack[i]);
     }
 
     int count = 0;
@@ -231,5 +252,21 @@ void draw_keys(CPU *cpu)
             printf("_\t");
         }
     }
+    printf("\n");
+}
+
+void cpu_snapshot(uint16 opcode, CPU *cpu)
+{
+    printf("opcode: %x, pc: %x", opcode, cpu->program_counter);
+    if (cpu->stack_pointer > 0) printf(" sp: %x,", cpu->stack_pointer);
+    for (int i = 0; i < STACK_SIZE; i++) {
+        if (cpu->stack[i] > 0) printf(" sp[%x]: %x,", i, cpu->stack[i]);
+    }
+    if (cpu->delay_timer > 0) printf(" dt: %x,", cpu->delay_timer);
+    for (int i = 0; i < REGISTER_COUNT; i++) {
+        if (cpu->V[i] > 0) printf(" V[%x]: %x,", i, cpu->V[i]);
+    }
+    if (cpu->I > 0) printf(" I: %x", cpu->I);
+
     printf("\n");
 }

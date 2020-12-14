@@ -18,7 +18,7 @@ struct Wave {
     uint16 period;
 };
 
-int initialize_audio();
+int initialize_audio(void);
 
 void emit_audio(SDL_AudioDeviceID);
 

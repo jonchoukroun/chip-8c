@@ -6,23 +6,23 @@
 #include "output.h"
 
 typedef struct CPU {
-    uint8 V[REGISTER_COUNT];
-    uint16 I;
+    uint16 *RAM;
 
-    uint16 stack[STACK_SIZE];
-    uint8 stack_pointer;
+    uint8 *V;
+    uint16 I;
 
     uint8 delay_timer;
     uint8 sound_timer;
 
-    uint8 frame_buffer[DISPLAY_SIZE];
-    uint8 draw_flag;
-
     uint16 program_counter;
 
-    uint8 RAM[RAM_SIZE];
+    uint16 *stack;
+    uint8 stack_pointer;
 
-    uint8 key_state[KEYBOARD_SIZE];
+    uint8 *frame_buffer;
+    uint8 draw_flag;
+
+    uint8 *key_state;
 
     struct HashTable *key_table;
 } CPU;

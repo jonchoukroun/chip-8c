@@ -22,42 +22,39 @@ uint8 font_set[FONTSET_SIZE] = {
 };
 
 void clear_frame_buffer(CPU *);
-uint8 generate_random_number();
+uint8 generate_random_number(void);
 
 CPU * initialize_cpu(KEYBOARD_TYPE keyboard)
 {
-    CPU *cpu = calloc(1, sizeof(CPU));
+    CPU *cpu = calloc(1, sizeof *cpu);
 
-    for (uint8 i = 0; i < REGISTER_COUNT; i++) {
-        cpu->V[i] = 0;
-    }
+    uint16 *ram = calloc(RAM_SIZE, sizeof ram);
+    cpu->RAM = ram;
+
+    uint8 *registers = calloc(REGISTER_COUNT, sizeof *registers);
+    cpu->V = registers;
 
     cpu->I = 0;
 
-    for (uint8 i = 0; i < STACK_SIZE; i++) {
-        cpu->stack[i] = 0;
-    }
+    cpu->sound_timer = 0;
+    cpu->delay_timer = 0;
+
+    cpu->program_counter = PROGRAM_START;
+
+    uint16 *stack = calloc(STACK_SIZE, sizeof *stack);
+    cpu->stack = stack;
     cpu->stack_pointer = 0;
 
-    cpu->delay_timer = 0;
-    cpu->sound_timer = 0;
-
-    clear_frame_buffer(cpu);
+    uint8 *frame_buffer = calloc(DISPLAY_SIZE, sizeof *frame_buffer);
+    cpu->frame_buffer = frame_buffer;
     cpu->draw_flag = 0;
 
-    cpu->program_counter = 0x200;
-
-    for (uint16 i = 0; i < RAM_SIZE; ++i) {
-        if (i < FONTSET_SIZE) {
-            cpu->RAM[i] = font_set[i];
-        } else {
-            cpu->RAM[i] = 0;
-        }
+    for (uint16 i = 0; i < FONTSET_SIZE; i++) {
+        cpu->RAM[i] = font_set[i];
     }
 
-    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-        cpu->key_state[i] = 0;
-    }
+    uint8 *key_state = calloc(KEYBOARD_SIZE, sizeof *key_state);
+    cpu->key_state = key_state;
 
     cpu->key_table = create_hashtable(keyboard);
 
@@ -71,20 +68,28 @@ uint16 fetch_opcode(CPU *cpu)
 
 uint8 execute_opcode(CPU *cpu, uint16 opcode)
 {
-    // printf("will execute %x\n", opcode);
+    uint8 x = (opcode & 0x0f00) >> 8;
+    uint8 y = (opcode & 0x00f0) >> 4;
+    uint8 byte = opcode & 0x00ff;
+    uint16 addr = opcode & 0x0fff;
+    uint8 nibble = opcode & 0x000f;
 
-    cpu->program_counter += 2;
     switch ((opcode & 0xf000) >> 12) {
         case 0x0:
-            switch(opcode & 0xff) {
+            switch(byte) {
                 case 0xe0:
                     clear_frame_buffer(cpu);
                     cpu->draw_flag = 1;
+                    cpu->program_counter += 2;
                     break;
 
                 case 0xee:
+                    if (cpu->stack_pointer == 0x0) {
+                        printf("Fatal error: Stack underflow.\nOpcode: %x\n", opcode);
+                        return 0;
+                    }
+                    cpu->stack_pointer--;
                     cpu->program_counter = cpu->stack[cpu->stack_pointer];
-                    cpu-> stack_pointer--;
                     break;
 
                 default:
@@ -94,140 +99,145 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0x1:
-            cpu->program_counter = opcode & 0xfff;
+            cpu->program_counter = addr;
             break;
 
         case 0x2:
-            cpu->stack_pointer++;
+            if (cpu->stack_pointer == STACK_SIZE) {
+                printf("Fatal error: stack overflow.\nOpcode: %x\n", opcode);
+                return 0;
+            }
             cpu->stack[cpu->stack_pointer] = cpu->program_counter;
-            cpu->program_counter = opcode & 0x0fff;
+            cpu->stack_pointer++;
+            cpu->program_counter = addr;
             break;
 
         case 0x3:
-            if ((cpu->V[(opcode & 0x0f00) >> 8]) == (opcode & 0x00ff))
+            if ((cpu->V[x]) == byte) {
+                cpu->program_counter += 4;
+            } else {
                 cpu->program_counter += 2;
-
+            }
             break;
 
         case 0x4:
-            if ((cpu->V[(opcode & 0x0f00) >> 8]) != (opcode & 0x00ff))
+            if ((cpu->V[x]) != byte) {
+                cpu->program_counter += 4;
+            } else {
                 cpu->program_counter += 2;
-
+            }
             break;
 
         case 0x5:
-            if (cpu->V[(opcode & 0x0f00) >> 8] == cpu->V[(opcode & 0x00f0) >> 4])
+            if (cpu->V[x] == cpu->V[y]) {
+                cpu->program_counter += 4;
+            } else {
                 cpu->program_counter += 2;
-
+            }
             break;
 
         case 0x6:
-            cpu->V[(opcode & 0x0f00) >> 8] = (opcode & 0x00ff);
+            cpu->V[x] = byte;
+            cpu->program_counter += 2;
             break;
 
         case 0x7:
-            cpu->V[(opcode & 0x0f00) >> 8] += (opcode & 0x00ff);
+            cpu->V[x] += byte;
+            cpu->program_counter += 2;
             break;
 
         case 0x8:
-            switch (opcode & 0x000f) {
+            switch (nibble) {
                 case 0x0:
-                    cpu->V[(opcode & 0x0f00) >> 8] = cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[x] = cpu->V[y];
                     break;
 
                 case 0x1:
-                    cpu->V[(opcode & 0x0f00) >> 8] |= cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[x] |= cpu->V[y];
                     break;
 
                 case 0x2:
-                    cpu->V[(opcode & 0x0f00) >> 8] &= cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[x] &= cpu->V[y];
                     break;
 
                 case 0x3:
-                    cpu->V[(opcode & 0x0f00) >> 8] ^= cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[x] ^= cpu->V[y];
                     break;
 
-                case 0x4:
-                    cpu->V[(opcode & 0x0f00) >> 8] += cpu->V[(opcode & 0x00f0) >>4];
-                    if (cpu->V[(opcode & 0x0f00) >> 8] > 0xff) {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 1;
-                    } else {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 0;
-                    }
-
+                case 0x4: {
+                    uint16 result = cpu->V[x] + cpu->V[y];
+                    cpu->V[CARRY_FLAG_ADDRESS] = result > 0xff ? 1 : 0;
+                    cpu->V[x] = result & 0xff;
                     break;
+                }
 
                 case 0x5:
-                    if (cpu->V[(opcode & 0x0f00) >> 8] > cpu->V[(opcode & 0x00f0) >> 4]) {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 1;
-                    } else {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 0;
-                    }
-                    cpu->V[(opcode & 0x0f00) >> 8] -= cpu->V[(opcode & 0x00f0) >> 4];
+                    cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[x] > cpu->V[y]) ? 1 : 0;
+                    cpu->V[x] -= cpu->V[y];
                     break;
 
                 case 0x6:
-                    cpu->V[CARRY_FLAG_ADDRESS] = cpu->V[(opcode & 0x0f00) >> 8] & 1;
-                    cpu->V[(opcode & 0x0f00) >> 8] >>= 1;
+                    cpu->V[CARRY_FLAG_ADDRESS] = cpu->V[x] & 1;
+                    cpu->V[x] >>= 1;
                     break;
 
                 case 0x7:
-                    if (cpu->V[(opcode & 0x00f0) >> 4] > cpu->V[(opcode & 0x0f00) >> 8]) {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 1;
-                    } else {
-                        cpu->V[CARRY_FLAG_ADDRESS] = 0;
-                    }
-                    cpu->V[(opcode & 0x0f00) >> 8] = cpu->V[(opcode & 0x00f0) >> 4] - cpu->V[(opcode & 0x0f00) >> 8];
+                    cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[y] > cpu->V[x]) ? 1 : 0;
+                    cpu->V[x] = cpu->V[y] - cpu->V[x];
                     break;
 
                 case 0xe:
-                    cpu->V[CARRY_FLAG_ADDRESS] = cpu->V[(opcode & 0x0f00) >> 8] & 1 << (sizeof(uint8) - 1);
-                    cpu->V[(opcode & 0x0f00) >> 8] <<= 1;
+                    cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[x] & 0x80) ? 1 : 0;
+                    cpu->V[x] <<= 1;
                     break;
 
                 default:
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
+            cpu->program_counter += 2;
             break;
 
         case 0x9:
-            if ((opcode & 0x000f) != 0) {
+            if (nibble != 0) {
                 printf("Coult not match opcode: %x\n", opcode);
                 return 0;
             }
 
-            if (cpu->V[(opcode & 0x0f00) >> 8] != cpu->V[(opcode & 0x00f0) >> 4])
+            if (cpu->V[x] != cpu->V[y]) {
+                cpu->program_counter += 4;
+            } else {
                 cpu->program_counter += 2;
-
+            }
             break;
 
         case 0xa:
-            cpu->I = opcode & 0x0fff;
+            cpu->I = addr;
+            cpu->program_counter += 2;
             break;
 
         case 0xb:
-            cpu->program_counter = cpu->V[0x0] + (opcode & 0x0fff);
+            cpu->program_counter = cpu->V[0x0] + addr;
             break;
 
         case 0xc: {
             uint8 num = generate_random_number();
-            cpu->V[(opcode & 0x0f00) >> 8] = num & (opcode & 0x00ff);
+            cpu->V[x] = (num & byte);
+            cpu->program_counter += 2;
             break;
         }
 
         case 0xd: {
-            uint8 height = opcode & 0x000f;
+            uint8 height = nibble;
             uint16 pixel;
             cpu->V[CARRY_FLAG_ADDRESS] = 0;
 
             for (uint8 row = 0; row < height; row++) {
                 pixel = cpu->RAM[cpu->I + row];
-                uint8 y_pos = (cpu->V[(opcode & 0x00f0) >> 4] + row) % DISPLAY_HEIGHT;
                 for (uint8 col = 0; col < PIXEL_WIDTH; col++) {
-                    uint8 x_pos = (cpu->V[(opcode & 0x0f00) >> 8] + col) % DISPLAY_WIDTH;
-
                     if (pixel & (0x80 >> col)) {
+                        uint8 x_pos = (cpu->V[x] + col) % DISPLAY_WIDTH;
+                        uint8 y_pos = (cpu->V[y] + row) % DISPLAY_HEIGHT;
                         uint16 frame = x_pos + (y_pos * DISPLAY_WIDTH);
                         if (cpu->frame_buffer[frame])
                             cpu->V[CARRY_FLAG_ADDRESS] = 1;
@@ -237,19 +247,26 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 }
             }
             cpu->draw_flag = 1;
+            cpu->program_counter += 2;
             break;
         }
 
         case 0xe:
-            switch (opcode & 0x00ff) {
+            switch (byte) {
                 case 0x9e:
-                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] == 1)
+                    if (cpu->key_state[cpu->V[x]] == 1) {
+                        cpu->program_counter += 4;
+                    } else {
                         cpu->program_counter += 2;
+                    }
                     break;
 
                 case 0xa1:
-                    if (cpu->key_state[cpu->V[(opcode & 0x0f00) >> 8]] == 0)
+                    if (cpu->key_state[cpu->V[x]] == 0) {
+                        cpu->program_counter += 4;
+                    } else {
                         cpu->program_counter += 2;
+                    }
                     break;
 
                 default:
@@ -259,74 +276,71 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0xf:
-            switch (opcode & 0x00ff) {
+            switch (byte) {
                 case 0x07:
-                    cpu->V[(opcode & 0x0f00) >> 8] = cpu->delay_timer;
+                    cpu->V[x] = cpu->delay_timer;
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x0a: {
-                    SDL_Event event;
-                    uint8 waiting = 1;
-                    while(waiting) {
-                        SDL_WaitEvent(&event);
-                        if (event.type == SDL_KEYDOWN) {
-                            uint8 key = event.key.keysym.scancode;
-                            // Handle quit
-                            if (key == SDL_SCANCODE_Q) return 0;
-
-                            uint8 key_value = get_key_value(cpu->key_table, key);
-                            if (key_value != 0xff) {
-                                cpu->V[(opcode & 0x0f00) >> 8] = key_value;
-                                waiting = 0;
-                            } else {
-                                printf("Invalid keypress %x\n", key);
-                            }
+                    uint8 is_pressed = 0;
+                    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
+                        if (cpu->key_state[i] == 1) {
+                            cpu->V[x] = i;
+                            is_pressed = 1;
                         }
                     }
+                    if (is_pressed == 0) return 1;
+
+                    cpu->program_counter += 2;
                     break;
                 }
 
                 case 0x15:
-                    cpu->delay_timer = cpu->V[(opcode & 0x0f00) >> 8];
+                    cpu->delay_timer = cpu->V[x];
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x18:
-                    cpu->sound_timer = cpu->V[(opcode & 0x0f00) >> 8];
+                    cpu->sound_timer = cpu->V[x];
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x1e:
-                    cpu->I += cpu->V[(opcode & 0x0f00) >> 8];
+                    cpu->I += cpu->V[x];
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x29:
-                    cpu->I = cpu->V[(opcode & 0x0f00) >> 8] * 5;
+                    cpu->I = cpu->V[x] * 5;
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x33: {
-                    uint8 decimal = cpu->V[(opcode & 0x0f00) >> 8];
-                    uint8 sig = 100;
+                    uint8 decimal = cpu->V[x];
 
-                    while (decimal > 0) {
-                        cpu->RAM[cpu->I] = decimal / sig;
-                        decimal %= sig;
-                        sig /= 10;
-                        cpu->I++;
-                    }
+                    cpu->RAM[cpu->I] = decimal / 100;
+                    cpu->RAM[cpu->I + 1] = (decimal % 100) / 10;
+                    cpu->RAM[cpu->I + 2] = decimal % 10;
+
+                    cpu->program_counter += 2;
                     break;
                 }
 
                 case 0x55:
-                    for (uint8 i = 0x0; i <= (opcode & 0x0f00) >> 8; ++i) {
-                        cpu->RAM[cpu->I] = cpu->V[i];
-                        cpu->I++;
+                    for (uint8 i = 0; i <= x; i++) {
+                        cpu->RAM[cpu->I + i] = cpu->V[i];
                     }
+                    cpu->I += x + 1;
+                    cpu->program_counter += 2;
                     break;
 
                 case 0x65:
-                    for (uint8 i = 0x0; i <= (opcode & 0x0f00) >> 8; ++i) {
-                        cpu->V[i] = cpu->RAM[cpu->I];
-                        cpu->I++;
+                    for (uint8 i = 0; i <= x; i++) {
+                        cpu->V[i] = cpu->RAM[cpu->I + i];
                     }
+                    cpu->I += x + 1;
+                    cpu->program_counter += 2;
                     break;
 
                 default:
@@ -345,7 +359,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
 
 void clear_frame_buffer(CPU *cpu)
 {
-    for (uint16 i = 0; i < (DISPLAY_SIZE); ++i) {
+    for (uint16 i = 0; i < DISPLAY_SIZE; i++) {
         cpu->frame_buffer[i] = 0;
     }
 }

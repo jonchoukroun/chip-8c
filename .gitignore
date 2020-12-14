@@ -1,4 +1,10 @@
-dist/
-*/**/*.o
+/* Builds */
+build/
+./**/*.o
 
 chip8
+
+/* Tests */
+test/results/
+
+.DS_Store

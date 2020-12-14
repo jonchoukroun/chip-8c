@@ -100,7 +100,7 @@ void initialize_hashtable(HashTable *table)
 {
     table->max_index = 0;
 
-    for (uint8 i = 0; i < KEYBOARD_SIZE; ++i) {
+    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
         HashEntry *entry = malloc(sizeof(HashEntry));
         entry->key = 0xff;
         entry->value = 0xff;

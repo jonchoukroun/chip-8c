@@ -21,7 +21,7 @@ typedef struct HashTable {
     HashEntry *entries[KEYBOARD_SIZE];
 } HashTable;
 
-HashTable * create_hashtable();
+HashTable * create_hashtable(KEYBOARD_TYPE);
 
 uint8 get_key_value(HashTable *, uint8);
 

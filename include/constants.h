@@ -6,6 +6,7 @@
 #define STACK_SIZE 16
 #define FONTSET_SIZE 80
 #define RAND_UPPER_BOUND 4096
+#define PROGRAM_START 0x200
 
 // Clock speed
 #define CPU_RATE 500                // Hz
