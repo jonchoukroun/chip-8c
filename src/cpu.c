@@ -68,6 +68,8 @@ uint16 fetch_opcode(CPU *cpu)
 
 uint8 execute_opcode(CPU *cpu, uint16 opcode)
 {
+    cpu->program_counter += 2;
+
     uint8 x = (opcode & 0x0f00) >> 8;
     uint8 y = (opcode & 0x00f0) >> 4;
     uint8 byte = opcode & 0x00ff;
