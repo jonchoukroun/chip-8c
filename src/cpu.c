@@ -82,7 +82,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 case 0xe0:
                     clear_frame_buffer(cpu);
                     cpu->draw_flag = 1;
-                    break;
+                    return 1;
 
                 case 0xee:
                     if (cpu->stack_pointer == 0x0) {
@@ -90,16 +90,15 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         return 0;
                     }
                     cpu->stack_pointer--;
-                    break;
+                    return 1;
 
                 default:
                     printf("Matched unused opcode: %x\n", opcode);
                     return 0;
             }
-            break;
 
         case 0x1:
-            break;
+            return 1;
 
         case 0x2:
             if (cpu->stack_pointer == STACK_SIZE) {
@@ -107,84 +106,83 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 return 0;
             }
             cpu->stack_pointer++;
-            break;
+            return 1;
 
         case 0x3:
             if ((cpu->V[x]) == byte) {
             } else {
             }
-            break;
+            return 1;
 
         case 0x4:
             if ((cpu->V[x]) != byte) {
             } else {
             }
-            break;
+            return 1;
 
         case 0x5:
             if (cpu->V[x] == cpu->V[y]) {
             } else {
             }
-            break;
+            return 1;
 
         case 0x6:
             cpu->V[x] = byte;
-            break;
+            return 1;
 
         case 0x7:
             cpu->V[x] += byte;
-            break;
+            return 1;
 
         case 0x8:
             switch (nibble) {
                 case 0x0:
                     cpu->V[x] = cpu->V[y];
-                    break;
+                    return 1;
 
                 case 0x1:
                     cpu->V[x] |= cpu->V[y];
-                    break;
+                    return 1;
 
                 case 0x2:
                     cpu->V[x] &= cpu->V[y];
-                    break;
+                    return 1;
 
                 case 0x3:
                     cpu->V[x] ^= cpu->V[y];
-                    break;
+                    return 1;
 
                 case 0x4: {
                     uint16 result = cpu->V[x] + cpu->V[y];
                     cpu->V[CARRY_FLAG_ADDRESS] = result > 0xff ? 1 : 0;
                     cpu->V[x] = result & 0xff;
-                    break;
+                    return 1;
                 }
 
                 case 0x5:
                     cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[x] > cpu->V[y]) ? 1 : 0;
                     cpu->V[x] -= cpu->V[y];
-                    break;
+                    return 1;
 
                 case 0x6:
                     cpu->V[CARRY_FLAG_ADDRESS] = cpu->V[x] & 1;
                     cpu->V[x] >>= 1;
-                    break;
+                    return 1;
 
                 case 0x7:
                     cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[y] > cpu->V[x]) ? 1 : 0;
                     cpu->V[x] = cpu->V[y] - cpu->V[x];
-                    break;
+                    return 1;
 
                 case 0xe:
                     cpu->V[CARRY_FLAG_ADDRESS] = (cpu->V[x] & 0x80) ? 1 : 0;
                     cpu->V[x] <<= 1;
-                    break;
+                    return 1;
 
                 default:
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            break;
 
         case 0x9:
             if (nibble != 0) {
@@ -195,19 +193,19 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             if (cpu->V[x] != cpu->V[y]) {
             } else {
             }
-            break;
+            return 1;
 
         case 0xa:
             cpu->I = addr;
-            break;
+            return 1;
 
         case 0xb:
-            break;
+            return 1;
 
         case 0xc: {
             uint8 num = generate_random_number();
             cpu->V[x] = (num & byte);
-            break;
+            return 1;
         }
 
         case 0xd: {
@@ -230,7 +228,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 }
             }
             cpu->draw_flag = 1;
-            break;
+            return 1;
         }
 
         case 0xe:
@@ -239,25 +237,24 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     if (cpu->key_state[cpu->V[x]] == 1) {
                     } else {
                     }
-                    break;
+                    return 1;
 
                 case 0xa1:
                     if (cpu->key_state[cpu->V[x]] == 0) {
                     } else {
                     }
-                    break;
+                    return 1;
 
                 default:
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            break;
 
         case 0xf:
             switch (byte) {
                 case 0x07:
                     cpu->V[x] = cpu->delay_timer;
-                    break;
+                    return 1;
 
                 case 0x0a: {
                     uint8 is_pressed = 0;
@@ -269,24 +266,24 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     }
                     if (is_pressed == 0) return 1;
 
-                    break;
+                    return 1;
                 }
 
                 case 0x15:
                     cpu->delay_timer = cpu->V[x];
-                    break;
+                    return 1;
 
                 case 0x18:
                     cpu->sound_timer = cpu->V[x];
-                    break;
+                    return 1;
 
                 case 0x1e:
                     cpu->I += cpu->V[x];
-                    break;
+                    return 1;
 
                 case 0x29:
                     cpu->I = cpu->V[x] * 5;
-                    break;
+                    return 1;
 
                 case 0x33: {
                     uint8 decimal = cpu->V[x];
@@ -295,7 +292,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     cpu->RAM[cpu->I + 1] = (decimal % 100) / 10;
                     cpu->RAM[cpu->I + 2] = decimal % 10;
 
-                    break;
+                    return 1;
                 }
 
                 case 0x55:
@@ -303,27 +300,23 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         cpu->RAM[cpu->I + i] = cpu->V[i];
                     }
                     cpu->I += x + 1;
-                    break;
+                    return 1;
 
                 case 0x65:
                     for (uint8 i = 0; i <= x; i++) {
                         cpu->V[i] = cpu->RAM[cpu->I + i];
                     }
                     cpu->I += x + 1;
-                    break;
+                    return 1;
 
                 default:
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            break;
-
         default:
             printf("Cannont match opcode: %x\n", opcode);
             return 0;
     }
-
-    return 1;
 }
 
 void clear_frame_buffer(CPU *cpu)
