@@ -80,7 +80,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 case 0xe0:
                     clear_frame_buffer(cpu);
                     cpu->draw_flag = 1;
-                    cpu->program_counter += 2;
                     break;
 
                 case 0xee:
@@ -89,7 +88,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         return 0;
                     }
                     cpu->stack_pointer--;
-                    cpu->program_counter = cpu->stack[cpu->stack_pointer];
                     break;
 
                 default:
@@ -99,7 +97,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             break;
 
         case 0x1:
-            cpu->program_counter = addr;
             break;
 
         case 0x2:
@@ -107,43 +104,33 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 printf("Fatal error: stack overflow.\nOpcode: %x\n", opcode);
                 return 0;
             }
-            cpu->stack[cpu->stack_pointer] = cpu->program_counter;
             cpu->stack_pointer++;
-            cpu->program_counter = addr;
             break;
 
         case 0x3:
             if ((cpu->V[x]) == byte) {
-                cpu->program_counter += 4;
             } else {
-                cpu->program_counter += 2;
             }
             break;
 
         case 0x4:
             if ((cpu->V[x]) != byte) {
-                cpu->program_counter += 4;
             } else {
-                cpu->program_counter += 2;
             }
             break;
 
         case 0x5:
             if (cpu->V[x] == cpu->V[y]) {
-                cpu->program_counter += 4;
             } else {
-                cpu->program_counter += 2;
             }
             break;
 
         case 0x6:
             cpu->V[x] = byte;
-            cpu->program_counter += 2;
             break;
 
         case 0x7:
             cpu->V[x] += byte;
-            cpu->program_counter += 2;
             break;
 
         case 0x8:
@@ -195,7 +182,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     printf("Could not match opcode %x\n", opcode);
                     return 0;
             }
-            cpu->program_counter += 2;
             break;
 
         case 0x9:
@@ -205,25 +191,20 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             }
 
             if (cpu->V[x] != cpu->V[y]) {
-                cpu->program_counter += 4;
             } else {
-                cpu->program_counter += 2;
             }
             break;
 
         case 0xa:
             cpu->I = addr;
-            cpu->program_counter += 2;
             break;
 
         case 0xb:
-            cpu->program_counter = cpu->V[0x0] + addr;
             break;
 
         case 0xc: {
             uint8 num = generate_random_number();
             cpu->V[x] = (num & byte);
-            cpu->program_counter += 2;
             break;
         }
 
@@ -247,7 +228,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 }
             }
             cpu->draw_flag = 1;
-            cpu->program_counter += 2;
             break;
         }
 
@@ -255,17 +235,13 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             switch (byte) {
                 case 0x9e:
                     if (cpu->key_state[cpu->V[x]] == 1) {
-                        cpu->program_counter += 4;
                     } else {
-                        cpu->program_counter += 2;
                     }
                     break;
 
                 case 0xa1:
                     if (cpu->key_state[cpu->V[x]] == 0) {
-                        cpu->program_counter += 4;
                     } else {
-                        cpu->program_counter += 2;
                     }
                     break;
 
@@ -279,7 +255,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             switch (byte) {
                 case 0x07:
                     cpu->V[x] = cpu->delay_timer;
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x0a: {
@@ -292,28 +267,23 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     }
                     if (is_pressed == 0) return 1;
 
-                    cpu->program_counter += 2;
                     break;
                 }
 
                 case 0x15:
                     cpu->delay_timer = cpu->V[x];
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x18:
                     cpu->sound_timer = cpu->V[x];
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x1e:
                     cpu->I += cpu->V[x];
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x29:
                     cpu->I = cpu->V[x] * 5;
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x33: {
@@ -323,7 +293,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     cpu->RAM[cpu->I + 1] = (decimal % 100) / 10;
                     cpu->RAM[cpu->I + 2] = decimal % 10;
 
-                    cpu->program_counter += 2;
                     break;
                 }
 
@@ -332,7 +301,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         cpu->RAM[cpu->I + i] = cpu->V[i];
                     }
                     cpu->I += x + 1;
-                    cpu->program_counter += 2;
                     break;
 
                 case 0x65:
@@ -340,7 +308,6 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         cpu->V[i] = cpu->RAM[cpu->I + i];
                     }
                     cpu->I += x + 1;
-                    cpu->program_counter += 2;
                     break;
 
                 default:
