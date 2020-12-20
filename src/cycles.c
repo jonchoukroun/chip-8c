@@ -2,7 +2,7 @@
 
 Cycle *create_cycle(uint8 type)
 {
-    Cycle *cycle = malloc(sizeof(Cycle));
+    Cycle *cycle = malloc(sizeof *cycle);
     if (type == CLOCK_CYCLE) {
         cycle->chunk = MS_CONVERSION / CPU_RATE;
     } else {

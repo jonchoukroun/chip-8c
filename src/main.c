@@ -71,8 +71,8 @@ int main(int argc, char *argv[])
 
         update_cycle(frames_cycle);
         if (frames_cycle->chunk >= frames_cycle->elapsed) {
+            reset_cycle(frames_cycle);
             if (cpu->draw_flag == 1) {
-                // draw_fb(cpu);
                 update_display(&renderer, cpu->frame_buffer);
                 cpu->draw_flag = 0;
             }
@@ -84,9 +84,7 @@ int main(int argc, char *argv[])
             }
 
             decrement_timers(cpu);
-            reset_cycle(frames_cycle);
         }
-        // draw_keys(cpu);
     }
 
     destroy_audio_device(audio_device);
