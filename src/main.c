@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
     // STANDARD or EXTENDED
     KEYBOARD_TYPE t = STANDARD;
     CPU *cpu = initialize_cpu(t);
-    // check_state(cpu);
 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
@@ -48,11 +47,10 @@ int main(int argc, char *argv[])
     SDL_Event event;
 
     Cycle *clock_cycle = create_cycle(CLOCK_CYCLE);
-    Cycle *frames_cycle = create_cycle(TIMER_CYCLE);
+    Cycle *frame_cycle = create_cycle(TIMER_CYCLE);
 
     while (running == 1) {
         reset_cycle(clock_cycle);
-        reset_cycle(frames_cycle);
 
         while (SDL_PollEvent(&event)) {
             running = handle_input(cpu, event);
@@ -64,14 +62,8 @@ int main(int argc, char *argv[])
             break;
         }
 
-        update_cycle(clock_cycle);
-        if (clock_cycle->elapsed < clock_cycle->chunk) {
-            delay(clock_cycle);
-        }
-
-        update_cycle(frames_cycle);
-        if (frames_cycle->chunk >= frames_cycle->elapsed) {
-            reset_cycle(frames_cycle);
+        update_cycle(frame_cycle);
+        if (is_elapsed(frame_cycle) == 1) {
             if (cpu->draw_flag == 1) {
                 update_display(&renderer, cpu->frame_buffer);
                 cpu->draw_flag = 0;
@@ -84,13 +76,18 @@ int main(int argc, char *argv[])
             }
 
             decrement_timers(cpu);
+            reset_cycle(frame_cycle);
+        }
+
+        if (is_elapsed(clock_cycle) == 0) {
+            delay(clock_cycle);
         }
     }
 
     destroy_audio_device(audio_device);
     destroy_display(&window, &renderer);
     destroy_cycle(clock_cycle);
-    destroy_cycle(frames_cycle);
+    destroy_cycle(frame_cycle);
     destroy_cpu(cpu);
 
     return 0;
@@ -121,7 +118,6 @@ uint8 handle_input(CPU *cpu, SDL_Event event)
 uint8 run_cycle(CPU *cpu)
 {
     uint16 opcode = fetch_opcode(cpu);
-    cpu_snapshot(opcode, cpu);
     if (execute_opcode(cpu, opcode) != 1) {
         // Allow to fail silently?
         printf("Failed to execute opcode %x. Exiting...\n", opcode);

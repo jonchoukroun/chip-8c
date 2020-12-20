@@ -15,12 +15,14 @@ typedef struct Cycle {
     uint8 type;
     uint32_t chunk;
     uint32_t start;
-    uint32_t elapsed;
+    uint32_t current;
 } Cycle;
 
 Cycle * create_cycle(uint8);
 
 void update_cycle(Cycle *);
+
+uint8 is_elapsed(Cycle *);
 
 void delay(Cycle *);
 

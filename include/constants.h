@@ -12,6 +12,7 @@
 #define CPU_RATE 500                // Hz
 #define DELAY_RATE 60               // Hz
 #define MS_CONVERSION 1000
+#define CLOCK_SPEED MS_CONVERSION / CPU_RATE
 
 // Display
 #define DISPLAY_TITLE "Chip-8 Emulator by Jon Choukroun"
