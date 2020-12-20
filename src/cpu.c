@@ -292,14 +292,12 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                     for (uint8 i = 0; i <= x; i++) {
                         cpu->RAM[cpu->I + i] = cpu->V[i];
                     }
-                    cpu->I += x + 1;
                     return 1;
 
                 case 0x65:
                     for (uint8 i = 0; i <= x; i++) {
                         cpu->V[i] = cpu->RAM[cpu->I + i];
                     }
-                    cpu->I += x + 1;
                     return 1;
 
                 default:
