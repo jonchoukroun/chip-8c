@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     }
 
     // STANDARD or EXTENDED
-    KEYBOARD_TYPE t = STANDARD;
+    KEYBOARD_TYPE t = EXTENDED;
     CPU *cpu = initialize_cpu(t);
 
     SDL_Window *window = NULL;
@@ -62,13 +62,13 @@ int main(int argc, char *argv[])
             break;
         }
 
+        if (cpu->draw_flag == 1) {
+            update_display(&renderer, cpu->frame_buffer);
+            cpu->draw_flag = 0;
+        }
+
         update_cycle(frame_cycle);
         if (is_elapsed(frame_cycle) == 1) {
-            if (cpu->draw_flag == 1) {
-                update_display(&renderer, cpu->frame_buffer);
-                cpu->draw_flag = 0;
-            }
-
             if (cpu->sound_timer > 0) {
                 emit_audio(audio_device);
             } else {
