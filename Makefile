@@ -22,7 +22,7 @@ CFLAGS +=  -Wstrict-prototypes
 CFLAGS +=  -Wundef
 CFLAGS +=  -Wold-style-definition
 
-_OBJ = input.o output.o cpu.o cycles.o main.o
+_OBJ = input.o output.o cpu.o cycles.o main.o debugging.o
 OBJ = $(patsubst %,$(BUILD_DIR)%,$(_OBJ))
 
 $(TARGET): $(OBJ)

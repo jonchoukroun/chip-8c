@@ -5,21 +5,12 @@
 #include "output.h"
 #include "cpu.h"
 #include "cycles.h"
-#include "test_programs.h"
+#include "debugging.h"
 
 uint8 handle_input(CPU *, SDL_Event);
 uint8 load_program(CPU *, char *);
 uint8 run_cycle(CPU *);
 void decrement_timers(CPU *);
-
-/**
- * Debugging
- **/
-void load_test_program(CPU *);
-void draw_fb(CPU *);
-void check_state(CPU *);
-void draw_keys(CPU *);
-void cpu_snapshot(uint16, CPU *);
 
 int main(int argc, char *argv[])
 {
@@ -184,89 +175,4 @@ void decrement_timers(CPU *cpu)
     if (cpu->delay_timer > 0) cpu->delay_timer--;
 
     if (cpu->sound_timer > 0) cpu->sound_timer--;
-}
-
-/**
- * Debugging
- **/
-void load_test_program(CPU *cpu)
-{
-    const uint16 *program = draw_sprites;
-    uint8 size = program[0];
-    for (uint8 i = 1; i <= size; i++) {
-        uint16 opcode = program[i];
-        uint16 idx = PROGRAM_START + ((i - 1) * 2);
-        cpu->RAM[idx] = (opcode & 0xff00) >> 8;
-        cpu->RAM[idx + 1] = opcode & 0x00ff;
-    }
-}
-
-void draw_fb(CPU *cpu) {
-    for (uint16 row = 0; row < DISPLAY_HEIGHT; row++) {
-        for (uint16 col = 0; col < DISPLAY_WIDTH; col++) {
-            uint8 pixel = 32;
-            if (cpu->frame_buffer[col + (row * DISPLAY_WIDTH)] == 1) {
-                pixel = 35;
-            } else {
-                pixel = 46;
-            }
-            printf("%c", pixel);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
-
-void check_state(CPU *cpu)
-{
-    for (int i = 0; i < REGISTER_COUNT; i++) {
-        printf("V[%x] = %x\n", i, cpu->V[i]);
-    }
-
-    printf("I = %x\n", cpu->I);
-    printf("DT = %x\n", cpu->delay_timer);
-    printf("ST = %x\n", cpu->sound_timer);
-
-    printf("SP = %x\n", cpu->stack_pointer);
-    for (int i = 0; i < STACK_SIZE; i++) {
-        printf("Stack[%x] = %x\n", i, cpu->stack[i]);
-    }
-
-    int count = 0;
-    for (int i = 0; i < (DISPLAY_SIZE); i++) {
-        if (cpu->frame_buffer[i] == 1) {
-            printf("on @ %x\n", i);
-            count++;
-        }
-    }
-    printf("pixels on = %d\n", count);
-
-}
-
-void draw_keys(CPU *cpu)
-{
-    for (uint8 i = 0; i < KEYBOARD_SIZE; i++) {
-        if (cpu->key_state[i] == 1) {
-            printf("%x\t", i);
-        } else {
-            printf("_\t");
-        }
-    }
-    printf("\n");
-}
-
-void cpu_snapshot(uint16 opcode, CPU *cpu)
-{
-    printf("opcode: %x, pc: %x", opcode, cpu->program_counter);
-    if (cpu->stack_pointer > 0) printf(" sp: %x,", cpu->stack_pointer);
-    for (int i = 0; i < STACK_SIZE; i++) {
-        if (cpu->stack[i] > 0) printf(" sp[%x]: %x,", i, cpu->stack[i]);
-    }
-    if (cpu->delay_timer > 0) printf(" dt: %x,", cpu->delay_timer);
-    for (int i = 0; i < REGISTER_COUNT; i++) {
-        if (cpu->V[i] > 0) printf(" V[%x]: %x,", i, cpu->V[i]);
-    }
-    if (cpu->I > 0) printf(" I: %x", cpu->I);
-
-    printf("\n");
 }
