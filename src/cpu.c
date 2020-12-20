@@ -90,6 +90,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                         return 0;
                     }
                     cpu->stack_pointer--;
+                    cpu->program_counter = cpu->stack[cpu->stack_pointer];
                     return 1;
 
                 default:
@@ -98,6 +99,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             }
 
         case 0x1:
+            cpu->program_counter = addr;
             return 1;
 
         case 0x2:
@@ -105,25 +107,21 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 printf("Fatal error: stack overflow.\nOpcode: %x\n", opcode);
                 return 0;
             }
+            cpu->stack[cpu->stack_pointer] = cpu->program_counter;
             cpu->stack_pointer++;
+            cpu->program_counter = addr;
             return 1;
 
         case 0x3:
-            if ((cpu->V[x]) == byte) {
-            } else {
-            }
+            if ((cpu->V[x]) == byte) cpu->program_counter += 2;
             return 1;
 
         case 0x4:
-            if ((cpu->V[x]) != byte) {
-            } else {
-            }
+            if ((cpu->V[x]) != byte) cpu->program_counter += 2;
             return 1;
 
         case 0x5:
-            if (cpu->V[x] == cpu->V[y]) {
-            } else {
-            }
+            if (cpu->V[x] == cpu->V[y]) cpu->program_counter += 2;
             return 1;
 
         case 0x6:
@@ -190,9 +188,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                 return 0;
             }
 
-            if (cpu->V[x] != cpu->V[y]) {
-            } else {
-            }
+            if (cpu->V[x] != cpu->V[y]) cpu->program_counter += 2;
             return 1;
 
         case 0xa:
@@ -200,6 +196,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
             return 1;
 
         case 0xb:
+            cpu->program_counter = cpu->V[0] + addr;
             return 1;
 
         case 0xc: {
@@ -234,15 +231,11 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
         case 0xe:
             switch (byte) {
                 case 0x9e:
-                    if (cpu->key_state[cpu->V[x]] == 1) {
-                    } else {
-                    }
+                    if (cpu->key_state[cpu->V[x]] == 1) cpu->program_counter += 2;
                     return 1;
 
                 case 0xa1:
-                    if (cpu->key_state[cpu->V[x]] == 0) {
-                    } else {
-                    }
+                    if (cpu->key_state[cpu->V[x]] == 0) cpu->program_counter += 2;
                     return 1;
 
                 default:
@@ -264,7 +257,7 @@ uint8 execute_opcode(CPU *cpu, uint16 opcode)
                             is_pressed = 1;
                         }
                     }
-                    if (is_pressed == 0) return 1;
+                    if (is_pressed == 0) cpu->program_counter -= 2;
 
                     return 1;
                 }
