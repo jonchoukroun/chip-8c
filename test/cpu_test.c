@@ -87,7 +87,7 @@ void test_RET(void)
     uint8 SP = 0x2;
     uint16 val = 0xbaba;
     cpu->stack_pointer = SP;
-    cpu->stack[cpu->stack_pointer] = val;
+    cpu->stack[cpu->stack_pointer - 1] = val;
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->stack_pointer, SP - 1);
@@ -105,8 +105,8 @@ void test_JP(void)
 void test_CALL(void)
 {
     uint16 opcode = 0x2def;
+    uint16 PC = PROGRAM_START;
     uint8 SP = 0x0;
-    uint16 PC = 0xabc;
     uint16 start_address = 0x123;
     uint16 next_address = get_addr(opcode);
 
@@ -114,13 +114,9 @@ void test_CALL(void)
     cpu->stack_pointer = SP;
     cpu->stack[cpu->stack_pointer] = start_address;
 
-    CU_ASSERT_EQUAL(cpu->stack_pointer, 0);
-    CU_ASSERT_EQUAL(cpu->stack[cpu->stack_pointer], start_address);
-    CU_ASSERT_EQUAL(cpu->program_counter, PC);
-
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->stack_pointer, 1);
-    CU_ASSERT_EQUAL(cpu->stack[cpu->stack_pointer], PC);
+    CU_ASSERT_EQUAL(cpu->stack[cpu->stack_pointer - 1], PC + 2);
     CU_ASSERT_EQUAL(cpu->program_counter, next_address);
 }
 
@@ -197,18 +193,21 @@ void test_ADD(void)
     uint16 opcode = 0x7005;
     uint8 x = get_X(opcode);
     uint8 kk = get_byte(opcode);
+    cpu->V[CARRY_FLAG_ADDRESS] = 0;
 
     cpu->program_counter = PROGRAM_START;
     cpu->V[x] = 5;
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], 0xa);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
+    CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0);
 
     cpu->program_counter = PROGRAM_START;
     cpu->V[x] = 0xff;
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], 0x4);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
+    CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0);
 }
 
 void test_LDxy(void)
@@ -225,6 +224,7 @@ void test_LDxy(void)
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], set_value);
+    CU_ASSERT_EQUAL(cpu->V[y], set_value);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
@@ -242,6 +242,7 @@ void test_OR(void)
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], (x_value | y_value));
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
@@ -259,6 +260,7 @@ void test_AND(void)
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], (x_value & y_value));
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
@@ -276,6 +278,7 @@ void test_XOR(void)
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], (x_value ^ y_value));
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
@@ -289,10 +292,12 @@ void test_ANDxy(void)
     uint8 y_value = 0xee;
     cpu->V[x] = x_value;
     cpu->V[y] = y_value;
+    cpu->V[CARRY_FLAG_ADDRESS] = 0;
     cpu->program_counter = PROGRAM_START;
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (x_value + y_value) & 0x00ff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0x21);
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 1);
 
     x_value = 0x1;
@@ -302,7 +307,8 @@ void test_ANDxy(void)
     cpu->program_counter = PROGRAM_START;
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (x_value + y_value) & 0x00ff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0x3);
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
@@ -320,7 +326,8 @@ void test_SUB(void)
     cpu->program_counter = PROGRAM_START;
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (x_value - y_value) & 0xff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0x1);
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 1);
 
     x_value = 0x1;
@@ -330,7 +337,8 @@ void test_SUB(void)
     cpu->program_counter = PROGRAM_START;
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (x_value - y_value) & 0xff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0xf7);
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
@@ -339,10 +347,11 @@ void test_SHR(void)
 {
     uint16 opcode = 0x8846;
     uint8 x = get_X(opcode);
-
     uint8 x_value = 0x11;
+
     cpu->V[x] = x_value;
     cpu->program_counter = PROGRAM_START;
+
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->V[x], 0x8);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0x1);
@@ -376,7 +385,8 @@ void test_SUBN(void)
     cpu->program_counter = PROGRAM_START;
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (y_value - x_value) & 0xff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0xff);
+    CU_ASSERT_EQUAL(cpu->V[y], y_value);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 0);
 
     x_value = 0x1;
@@ -385,7 +395,7 @@ void test_SUBN(void)
     cpu->V[y] = y_value;
     cpu->program_counter = PROGRAM_START;
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->V[x], (y_value - x_value) & 0xff);
+    CU_ASSERT_EQUAL(cpu->V[x], 0x9);
     CU_ASSERT_EQUAL(cpu->V[CARRY_FLAG_ADDRESS], 1);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
@@ -442,9 +452,10 @@ void test_SNExy(void)
 void test_LDI(void)
 {
     uint16 opcode = 0xaabc;
-    uint16 addr = 0xabc;
-    cpu->I = 0x123;
+    uint16 addr = get_addr(opcode);
+
     cpu->program_counter = PROGRAM_START;
+    cpu->I = 0x123;
 
     execute_opcode(cpu, opcode);
     CU_ASSERT_EQUAL(cpu->I, addr);
@@ -537,7 +548,7 @@ void test_SKP(void)
 {
     uint16 opcode = 0xe19e;
     uint8 x = get_X(opcode);
-    uint8 key = 0x8;            // 2nd row middle key
+    uint8 key = 0x8;
     cpu->program_counter = PROGRAM_START;
     cpu->V[x] = key;
     cpu->key_state[key] = 1;
@@ -677,7 +688,7 @@ void test_LDIx(void)
 {
     uint16 opcode = 0xff55;
     uint8 x = get_X(opcode);
-    uint16 I = 0x300;
+    uint16 I = 0x200;
     uint8 test_values[] = {
         0xf, 0xe, 0xd, 0xc,
         0xb, 0xa, 0x9, 0x8,
@@ -687,15 +698,17 @@ void test_LDIx(void)
 
     cpu->program_counter = PROGRAM_START;
     cpu->I = I;
-    for (uint8 i = 0; i <= 0xf; i++) {
+
+    for (uint8 i = 0; i < x; i++) {
+        cpu->RAM[cpu->I + i] = 0;
         cpu->V[i] = test_values[i];
     }
 
     execute_opcode(cpu, opcode);
-    CU_ASSERT_EQUAL(cpu->I, I);
-    for (uint16 i = 0; i <= 0xf; i++) {
-        CU_ASSERT_EQUAL(cpu->RAM[cpu->I+ i + 1], test_values[i]);
+    for (uint8 i = 0; i < x; i++) {
+        CU_ASSERT_EQUAL(cpu->RAM[cpu->I + i], cpu->V[i]);
     }
+    CU_ASSERT_EQUAL(cpu->I, I);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
@@ -703,6 +716,7 @@ void test_LDxI(void)
 {
     uint16 opcode = 0xf865;
     uint8 x = get_X(opcode);
+    uint16 I = 0x500;
     uint8 test_values[] = {
         0xf, 0xe, 0xd, 0xc,
         0xb, 0xa, 0x9, 0x8,
@@ -711,19 +725,18 @@ void test_LDxI(void)
     };
 
     cpu->program_counter = PROGRAM_START;
-    cpu->I = 0x250;
-    for (uint8 i = 0; i <= 0xf; i++) {
-        cpu->V[i] = 0x0;
-        cpu->RAM[cpu->I + i + 1] = test_values[i];
+    cpu->I = I;
+
+    for (uint8 i = 0; i < x; i++) {
+        cpu->V[i] = 0;
+        cpu->RAM[cpu->I + i] = test_values[i];
     }
 
     execute_opcode(cpu, opcode);
-    for (uint8 i = 0 ; i <= x; i++) {
-        CU_ASSERT_EQUAL(cpu->V[i], test_values[i]);
+    for (uint8 i = 0; i < x; i++) {
+        CU_ASSERT_EQUAL(cpu->V[i], cpu->RAM[cpu->I + i]);
     }
-    for (uint8 i = (x + 1); i <= 0xf; i++) {
-        CU_ASSERT_EQUAL(cpu->V[i], 0x0);
-    }
+    CU_ASSERT_EQUAL(cpu->I, I);
     CU_ASSERT_EQUAL(cpu->program_counter, PROGRAM_START + 2);
 }
 
